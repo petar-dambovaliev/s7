@@ -1,33 +1,3 @@
-pub const CONFIRM_CONNECTION: u8 = 0xD0;
-
-// ISO Connection Request telegram (contains also ISO Header and COTP Header)
-pub const ISO_CONNECTION_REQUEST_TELEGRAM: [u8; 22] = [
-    // TPKT (RFC1006 Header)
-    3,  // RFC 1006 ID (3)
-    0,  // Reserved, always 0
-    0,  // High part of packet lenght (entire frame, payload and TPDU included)
-    22, // Low part of packet lenght (entire frame, payload and TPDU included)
-    // COTP (ISO 8073 Header)
-    17,  // PDU Size Length
-    224, // CR - Connection Request ID
-    0,   // Dst Reference HI
-    0,   // Dst Reference LO
-    0,   // Src Reference HI
-    1,   // Src Reference LO
-    0,   // Class + Options Flags
-    192, // PDU Max Length ID
-    1,   // PDU Max Length HI
-    10,  // PDU Max Length LO
-    193, // Src TSAP Identifier
-    2,   // Src TSAP Length (2 bytes)
-    1,   // Src TSAP HI (will be overwritten)
-    0,   // Src TSAP LO (will be overwritten)
-    194, // Dst TSAP Identifier
-    2,   // Dst TSAP Length (2 bytes)
-    1,   // Dst TSAP HI (will be overwritten)
-    2,
-]; // Dst TSAP LO (will be overwritten)
-
 // Area ID
 #[derive(Clone, Copy)]
 #[allow(dead_code)]
@@ -64,8 +34,12 @@ pub fn data_size_byte(word_length: i32) -> i32 {
 }
 
 // PLC Status
+//todo implement start stop status commands
+#[allow(dead_code)]
 pub const CPU_STATUS_UNKNOWN: i32 = 0;
+#[allow(dead_code)]
 pub const CPU_STATUS_RUN: i32 = 8;
+#[allow(dead_code)]
 pub const CPU_STATUS_STOP: i32 = 4;
 
 //size header
@@ -75,52 +49,9 @@ pub const SIZE_HEADER_WRITE: i32 = 35; // Header Size when Writing
 // Result transport size
 pub const TS_RES_BIT: i32 = 3;
 pub const TS_RES_BYTE: i32 = 4;
+#[allow(dead_code)]
 pub const TS_RES_INT: i32 = 5;
+//todo implement read write multi
+#[allow(dead_code)]
 pub const TS_RES_REAL: i32 = 7;
 pub const TS_RES_OCTET: i32 = 9;
-
-// S7 Read/Write Request Header (contains also ISO Header and COTP Header)
-pub const READ_WRITE_TELEGRAM: [u8; 35] = [
-    // 31-35 bytes
-    3,
-    0,
-    0,
-    31, // Telegram Length (Data Size + 31 or 35)
-    2,
-    240,
-    128, // COTP (see above for info)
-    50,  // S7 Protocol ID
-    1,   // Job Type
-    0,
-    0, // Redundancy identification
-    5,
-    0, // PDU Reference //lth this use for request S7 packet id
-    0,
-    14, // Parameters Length
-    0,
-    0,             // Data Length = Size(bytes) + 4
-    4,             // Function 4 Read Var, 5 Write Var
-    1,             // Items count
-    18,            // Var spec.
-    10,            // Length of remaining bytes
-    16,            // Syntax ID
-    WL_BYTE as u8, // Transport Size idx=22
-    0,
-    0, // Num Elements
-    0,
-    0,   // DB Number (if any, else 0)
-    132, // Area Type
-    0,
-    0,
-    0, // Area Offset
-    // WR area
-    0, // Reserved
-    4, // Transport size
-    0,
-    0,
-]; // Data Length * 8 (if not bit or timer or counter)
-
-pub const PDU_NEGOTIATION_TELEGRAM: [u8; 25] = [
-    3, 0, 0, 25, 2, 240, 128, // TPKT + COTP (see above for info)
-    50, 1, 0, 0, 4, 0, 0, 8, 0, 0, 240, 0, 0, 1, 0, 1, 0, 30,
-]; // PDU Length Requested = HI-LO Here Default 480 bytes

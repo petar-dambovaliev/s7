@@ -6,7 +6,6 @@ edition = "2018"
 description = "A simple library that can be used to communicate with Siemens S7 family PLC devices"
 keywords = ["siemens", "s7", "plc"]
 license-file = "LICENSE.md"
-maintenance = { status = "actively-developed" }
 repository = "https://github.com/petar-dambovaliev/s7"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

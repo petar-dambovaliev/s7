@@ -5,13 +5,10 @@
 use super::constant::{self, Area};
 use super::error::{self, Error};
 use super::tcp;
+use super::transport::{self, Transport};
 use byteorder::{BigEndian, ByteOrder};
 
-pub trait Transport {
-    fn send(&mut self, request: &[u8]) -> Result<Vec<u8>, Error>;
-    fn pdu_length(&self) -> i32;
-}
-
+/// Client allows for communication with S7 family devices
 #[derive(Debug, Clone)]
 pub struct Client<T: Transport> {
     transport: T,
@@ -31,12 +28,14 @@ impl<T: Transport> Client<T> {
 
     /// # Examples
     ///
-    /// ```
-    ///extern crate s7;
-    ///use s7::{client::Client, tcp};
-    ///use std::time::Duration;
+    /// ```no_run
+    /// use std::net::{Ipv4Addr, IpAddr};
+    /// use s7::{client::Client, tcp, transport};
+    /// use std::time::Duration;
     ///
-    /// let mut opts = tcp::Options::new("127.0.0.1:9999".to_string(), tcp::Connection::PG, 5, 5);
+    /// let addr = Ipv4Addr::new(127, 0, 0, 1);
+    /// let mut opts = tcp::Options::new(IpAddr::from(addr), transport::Connection::PG, 5, 5);
+    ///
     /// opts.read_timeout = Duration::from_secs(2);
     /// opts.write_timeout = Duration::from_secs(2);
     /// let mut cl = Client::new_tcp(opts).unwrap();
@@ -65,6 +64,27 @@ impl<T: Transport> Client<T> {
         );
     }
 
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use std::net::{Ipv4Addr, IpAddr};
+    /// use s7::{client::Client, tcp, transport};
+    /// use std::time::Duration;
+    ///
+    /// let addr = Ipv4Addr::new(127, 0, 0, 1);
+    /// let mut opts = tcp::Options::new(IpAddr::from(addr), transport::Connection::PG, 5, 5);
+    ///
+    /// opts.read_timeout = Duration::from_secs(2);
+    /// opts.write_timeout = Duration::from_secs(2);
+    /// let mut cl = Client::new_tcp(opts).unwrap();
+    ///
+    /// let buffer = &mut vec![0u8; 25];
+    ///
+    /// match cl.db_write(1, 1, 3, buffer) {
+    ///       Ok(()) => println!("buffer: {:?}", buffer),
+    ///       Err(e) => println!("error: {:?}", e)
+    /// }
+    /// ```
     pub fn db_write(
         &mut self,
         db_number: i32,
@@ -82,14 +102,77 @@ impl<T: Transport> Client<T> {
         );
     }
 
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use std::net::{Ipv4Addr, IpAddr};
+    /// use s7::{client::Client, tcp, transport};
+    /// use std::time::Duration;
+    ///
+    /// let addr = Ipv4Addr::new(127, 0, 0, 1);
+    /// let mut opts = tcp::Options::new(IpAddr::from(addr), transport::Connection::PG, 5, 5);
+    ///
+    /// opts.read_timeout = Duration::from_secs(2);
+    /// opts.write_timeout = Duration::from_secs(2);
+    /// let mut cl = Client::new_tcp(opts).unwrap();
+    ///
+    /// let buffer = &mut vec![0u8; 25];
+    ///
+    /// match cl.mb_read(1, 3, buffer) {
+    ///       Ok(()) => println!("buffer: {:?}", buffer),
+    ///       Err(e) => println!("error: {:?}", e)
+    /// }
+    /// ```
     pub fn mb_read(&mut self, start: i32, size: i32, buffer: &mut Vec<u8>) -> Result<(), Error> {
         return self.read(Area::Merker, 0, start, size, constant::WL_BYTE, buffer);
     }
 
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use std::net::{Ipv4Addr, IpAddr};
+    /// use s7::{client::Client, tcp, transport};
+    /// use std::time::Duration;
+    ///
+    /// let addr = Ipv4Addr::new(127, 0, 0, 1);
+    /// let mut opts = tcp::Options::new(IpAddr::from(addr), transport::Connection::PG, 5, 5);
+    ///
+    /// opts.read_timeout = Duration::from_secs(2);
+    /// opts.write_timeout = Duration::from_secs(2);
+    /// let mut cl = Client::new_tcp(opts).unwrap();
+    ///
+    /// let buffer = &mut vec![0u8; 25];
+    ///
+    /// match cl.mb_write(1, 3, buffer) {
+    ///       Ok(()) => println!("buffer: {:?}", buffer),
+    ///       Err(e) => println!("error: {:?}", e)
+    /// }
+    /// ```
     pub fn mb_write(&mut self, start: i32, size: i32, buffer: &mut Vec<u8>) -> Result<(), Error> {
         return self.write(Area::Merker, 0, start, size, constant::WL_BYTE, buffer);
     }
 
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use std::net::{Ipv4Addr, IpAddr};
+    /// use s7::{client::Client, tcp, transport};
+    /// use std::time::Duration;
+    ///
+    /// let addr = Ipv4Addr::new(127, 0, 0, 1);
+    /// let mut opts = tcp::Options::new(IpAddr::from(addr), transport::Connection::PG, 5, 5);
+    ///
+    /// opts.read_timeout = Duration::from_secs(2);
+    /// opts.write_timeout = Duration::from_secs(2);
+    /// let mut cl = Client::new_tcp(opts).unwrap();
+    ///
+    /// let buffer = &mut vec![0u8; 25];
+    ///
+    /// match cl.eb_read(1, 3, buffer) {
+    ///       Ok(()) => println!("buffer: {:?}", buffer),
+    ///       Err(e) => println!("error: {:?}", e)
+    /// }
+    /// ```
     pub fn eb_read(&mut self, start: i32, size: i32, buffer: &mut Vec<u8>) -> Result<(), Error> {
         return self.read(
             Area::ProcessInput,
@@ -101,6 +184,27 @@ impl<T: Transport> Client<T> {
         );
     }
 
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use std::net::{Ipv4Addr, IpAddr};
+    /// use s7::{client::Client, tcp, transport};
+    /// use std::time::Duration;
+    ///
+    /// let addr = Ipv4Addr::new(127, 0, 0, 1);
+    /// let mut opts = tcp::Options::new(IpAddr::from(addr), transport::Connection::PG, 5, 5);
+    ///
+    /// opts.read_timeout = Duration::from_secs(2);
+    /// opts.write_timeout = Duration::from_secs(2);
+    /// let mut cl = Client::new_tcp(opts).unwrap();
+    ///
+    /// let buffer = &mut vec![0u8; 25];
+    ///
+    /// match cl.eb_write(1, 3, buffer) {
+    ///       Ok(()) => println!("buffer: {:?}", buffer),
+    ///       Err(e) => println!("error: {:?}", e)
+    /// }
+    /// ```
     pub fn eb_write(&mut self, start: i32, size: i32, buffer: &mut Vec<u8>) -> Result<(), Error> {
         return self.write(
             Area::ProcessInput,
@@ -112,6 +216,27 @@ impl<T: Transport> Client<T> {
         );
     }
 
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use std::net::{Ipv4Addr, IpAddr};
+    /// use s7::{client::Client, tcp, transport};
+    /// use std::time::Duration;
+    ///
+    /// let addr = Ipv4Addr::new(127, 0, 0, 1);
+    /// let mut opts = tcp::Options::new(IpAddr::from(addr), transport::Connection::PG, 5, 5);
+    ///
+    /// opts.read_timeout = Duration::from_secs(2);
+    /// opts.write_timeout = Duration::from_secs(2);
+    /// let mut cl = Client::new_tcp(opts).unwrap();
+    ///
+    /// let buffer = &mut vec![0u8; 25];
+    ///
+    /// match cl.ab_read(1, 3, buffer) {
+    ///       Ok(()) => println!("buffer: {:?}", buffer),
+    ///       Err(e) => println!("error: {:?}", e)
+    /// }
+    /// ```
     pub fn ab_read(&mut self, start: i32, size: i32, buffer: &mut Vec<u8>) -> Result<(), Error> {
         return self.read(
             Area::ProcessOutput,
@@ -123,6 +248,27 @@ impl<T: Transport> Client<T> {
         );
     }
 
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use std::net::{Ipv4Addr, IpAddr};
+    /// use s7::{client::Client, tcp, transport};
+    /// use std::time::Duration;
+    ///
+    /// let addr = Ipv4Addr::new(127, 0, 0, 1);
+    /// let mut opts = tcp::Options::new(IpAddr::from(addr), transport::Connection::PG, 5, 5);
+    ///
+    /// opts.read_timeout = Duration::from_secs(2);
+    /// opts.write_timeout = Duration::from_secs(2);
+    /// let mut cl = Client::new_tcp(opts).unwrap();
+    ///
+    /// let buffer = &mut vec![0u8; 25];
+    ///
+    /// match cl.ab_write(1, 3, buffer) {
+    ///       Ok(()) => println!("buffer: {:?}", buffer),
+    ///       Err(e) => println!("error: {:?}", e)
+    /// }
+    /// ```
     pub fn ab_write(&mut self, start: i32, size: i32, buffer: &mut Vec<u8>) -> Result<(), Error> {
         return self.write(
             Area::ProcessOutput,
@@ -196,7 +342,7 @@ impl<T: Transport> Client<T> {
             let size_requested = num_elements * word_size;
             // Setup the telegram
             let mut request =
-                constant::READ_WRITE_TELEGRAM[..constant::SIZE_HEADER_READ as usize].to_vec();
+                transport::READ_WRITE_TELEGRAM[..constant::SIZE_HEADER_READ as usize].to_vec();
 
             // Set DB Number
             request[25] = db_bytes[0];
@@ -301,9 +447,9 @@ impl<T: Transport> Client<T> {
             }
         }
 
-        let (mut address, mut tot_elements, mut offset): (i32, i32, i32) = (0, 0, 0);
+        let mut offset: i32 = 0;
         let max_elements = (self.transport.pdu_length() - 35) / word_size; // 35 = Reply telegram header
-        tot_elements = amount;
+        let mut tot_elements = amount;
 
         while tot_elements > 0 {
             let mut num_elements = tot_elements;
@@ -314,7 +460,7 @@ impl<T: Transport> Client<T> {
             let iso_size = constant::SIZE_HEADER_WRITE + data_size;
 
             // Setup the telegram
-            let mut request_data = constant::READ_WRITE_TELEGRAM.to_vec();
+            let mut request_data = transport::READ_WRITE_TELEGRAM.to_vec();
             // Whole telegram Size
             BigEndian::write_u16(request_data[2..].as_mut(), iso_size as u16);
             // Data length
@@ -332,17 +478,17 @@ impl<T: Transport> Client<T> {
                 _ => {}
             }
             // Adjusts start and word length
-            match word_len {
+            let mut address = match word_len {
                 constant::WL_BIT | constant::WL_COUNTER | constant::WL_TIMER => {
-                    address = start;
                     length = data_size;
                     request_data[22] = word_len as u8;
+                    start
                 }
                 _ => {
-                    address = start << 3;
                     length = data_size << 3;
+                    start << 3
                 }
-            }
+            };
 
             // Num elements
             BigEndian::write_u16(request_data[23..].as_mut(), num_elements as u16);
@@ -383,13 +529,30 @@ impl<T: Transport> Client<T> {
 #[test]
 fn client_new() {
     use super::tcp;
-    let opts = tcp::Options::new("127.0.0.1".to_string(), tcp::Connection::PG, 5, 5);
-    let mut cl = Client::new_tcp(opts).unwrap();
+    use super::transport::Connection;
+    use std::net::{IpAddr, Ipv4Addr};
+    use std::time::Duration;
 
-    let buffer = &mut vec![0u8; 25];
+    let addr = Ipv4Addr::new(127, 0, 0, 1);
+    let mut opts = tcp::Options::new(IpAddr::from(addr), Connection::PG, 5, 5);
+
+    opts.read_timeout = Duration::from_secs(2);
+    opts.write_timeout = Duration::from_secs(2);
+
+    let t = match tcp::Transport::connect(opts) {
+        Ok(t) => t,
+        Err(e) => {
+            println!("error: {:?}", e);
+            assert!(false);
+            return;
+        }
+    };
+
+    let mut cl = Client::new(t);
+    let buffer = &mut vec![0u8; 255];
 
     match cl.db_read(1, 1, 3, buffer) {
-        Ok(()) => assert!(true),
-        Err(e) => assert!(false, "{:?}", e),
+        Ok(()) => println!("buffer: {:?}", buffer),
+        Err(e) => println!("error: {:?}", e),
     }
 }
