@@ -1,6 +1,6 @@
 [package]
 name = "s7"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["Petar Dambovaliev <petar.atanasov.1987@gmail.com>"]
 edition = "2018"
 description = "A simple library that can be used to communicate with Siemens S7 family PLC devices"
