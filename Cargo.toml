@@ -7,6 +7,7 @@ description = "A simple library that can be used to communicate with Siemens S7 
 keywords = ["siemens", "s7", "plc"]
 license-file = "LICENSE.md"
 maintenance = { status = "actively-developed" }
+appveyor = { repository = "https://github.com/petar-dambovaliev/s7", branch = "master", service = "github" }
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
