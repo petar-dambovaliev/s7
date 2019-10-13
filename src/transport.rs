@@ -106,3 +106,29 @@ pub const PDU_NEGOTIATION_TELEGRAM: [u8; 25] = [
     3, 0, 0, 25, 2, 240, 128, // TPKT + COTP (see above for info)
     50, 1, 0, 0, 4, 0, 0, 8, 0, 0, 240, 0, 0, 1, 0, 1, 0, 30,
 ]; // PDU Length Requested = HI-LO Here Default 480 bytes
+
+/// warm start request
+pub(crate) const WARM_START_TELEGRAM: [u8; 37] = [
+    3, 0, 0, 37, 2, 240, 128, 50, 1, 0, 0, 12, 0, 0, 20, 0, 0, 40, 0, 0, 0, 0, 0, 0, 253, 0, 0, 9,
+    80, 95, 80, 82, 79, 71, 82, 65, 77,
+];
+
+/// cold start request
+pub(crate) const COLD_START_TELEGRAM: [u8; 39] = [
+    3, 0, 0, 39, 2, 240, 128, 50, 1, 0, 0, 15, 0, 0, 22, 0, 0, 40, 0, 0, 0, 0, 0, 0, 253, 0, 2, 67,
+    32, 9, 80, 95, 80, 82, 79, 71, 82, 65, 77,
+];
+
+/// stop request
+pub(crate) const STOP_TELEGRAM: [u8; 33] = [
+    3, 0, 0, 33, 2, 240, 128, 50, 1, 0, 0, 14, 0, 0, 16, 0, 0, 41, 0, 0, 0, 0, 0, 9, 80, 95, 80,
+    82, 79, 71, 82, 65, 77,
+];
+
+pub(crate) const TELEGRAM_MIN_RESPONSE: usize = 18;
+
+pub(crate) const PDU_START: u8 = 0x28; // CPU start
+pub(crate) const PDU_STOP: u8 = 0x29; // CPU stop
+
+pub(crate) const PDU_ALREADY_STARTED: u8 = 0x02; // CPU already in run mode
+pub(crate) const PDU_ALREADY_STOPPED: u8 = 0x07; // CPU already in stop mode

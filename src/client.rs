@@ -26,6 +26,61 @@ impl<T: Transport> Client<T> {
         Client { transport }
     }
 
+    /// Starting the CPU from power off,Current configuration is discarded and program processing begins again with the initial values.
+    pub fn start(&mut self) -> Result<(), Error> {
+        self.cold_warm_start_stop(
+            transport::COLD_START_TELEGRAM.as_ref(),
+            transport::PDU_START,
+            error::CLI_CANNOT_START_PLC,
+            transport::PDU_ALREADY_STARTED,
+            error::CLI_ALREADY_RUN,
+        )
+    }
+
+    /// Restarting the CPU without turning the power off, Program processing starts once again where Retentive data is retained.
+    pub fn restart(&mut self) -> Result<(), Error> {
+        self.cold_warm_start_stop(
+            transport::WARM_START_TELEGRAM.as_ref(),
+            transport::PDU_START,
+            error::CLI_CANNOT_START_PLC,
+            transport::PDU_ALREADY_STARTED,
+            error::CLI_ALREADY_RUN,
+        )
+    }
+
+    pub fn stop(&mut self) -> Result<(), Error> {
+        self.cold_warm_start_stop(
+            transport::STOP_TELEGRAM.as_ref(),
+            transport::PDU_STOP,
+            error::CLI_CANNOT_STOP_PLC,
+            transport::PDU_ALREADY_STOPPED,
+            error::CLI_ALREADY_STOP,
+        )
+    }
+    fn cold_warm_start_stop(
+        &mut self,
+        req: &[u8],
+        start_cmp: u8,
+        start: i32,
+        already_cmp: u8,
+        already: i32,
+    ) -> Result<(), Error> {
+        let response = self.transport.send(req)?;
+
+        if response.len() <= transport::TELEGRAM_MIN_RESPONSE {
+            return Err(Error::Response {
+                code: error::ISO_INVALID_PDU,
+            });
+        }
+        if response[19] != start_cmp {
+            return Err(Error::Response { code: start });
+        }
+        if response[20] == already_cmp {
+            return Err(Error::Response { code: already });
+        }
+        Ok(())
+    }
+
     /// # Examples
     ///
     /// ```no_run
