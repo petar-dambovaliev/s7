@@ -27,6 +27,8 @@ pub trait Transport {
     fn send(&mut self, request: &[u8]) -> Result<Vec<u8>, Error>;
     /// pdu length needs to be set by the implementor, during the connection phase.
     fn pdu_length(&self) -> i32;
+
+    fn negotiate(&mut self, conn_type: Connection) -> Result<(), Error>;
 }
 
 /// response from the plc that the connection has been confirmed
@@ -125,7 +127,7 @@ pub(crate) const STOP_TELEGRAM: [u8; 33] = [
     82, 79, 71, 82, 65, 77,
 ];
 
-pub(crate) const TELEGRAM_MIN_RESPONSE: usize = 18;
+pub(crate) const TELEGRAM_MIN_RESPONSE: usize = 19;
 
 pub(crate) const PDU_START: u8 = 0x28; // CPU start
 pub(crate) const PDU_STOP: u8 = 0x29; // CPU stop

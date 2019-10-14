@@ -35,6 +35,8 @@ pub struct Options {
     pub write_timeout: Duration,
     address: String,
     conn_type: transport::Connection,
+    rack: u16,
+    slot: u16,
     //Transport Service Access Point
     local_tsap: u16,
     remote_tsap: u16,
@@ -48,22 +50,20 @@ pub struct Options {
 }
 
 impl Options {
-    pub fn new(address: IpAddr, conn_type: transport::Connection, rack: u16, slot: u16) -> Options {
-        let mut remote_tsap = ((conn_type as u16) << 8) as u16 + (rack * 0x20) + slot;
-        let local_tsap: u16 = 0x0100 & 0x0000FFFF;
-        remote_tsap = remote_tsap & 0x0000FFFF;
-
+    pub fn new(address: IpAddr, rack: u16, slot: u16) -> Options {
         Options {
             read_timeout: Duration::new(0, 0),
             write_timeout: Duration::new(0, 0),
             address: format!("{}:{}", address.to_string(), ISO_TCP.to_string()), //ip:102,
-            conn_type,
-            local_tsap,
-            remote_tsap,
-            local_tsap_high: (local_tsap >> 8) as u8,
-            local_tsap_low: (local_tsap & 0x00FF) as u8,
-            remote_tsap_high: (remote_tsap >> 8) as u8,
-            remote_tsap_low: (remote_tsap as u8) & 0x00FF,
+            conn_type: transport::Connection::PG,                                // default
+            rack,
+            slot,
+            local_tsap: 0,
+            remote_tsap: 0,
+            local_tsap_high: 0,
+            local_tsap_low: 0,
+            remote_tsap_high: 0,
+            remote_tsap_low: 0,
             last_pdu_type: 0,
             pdu_length: 0,
         }
@@ -76,18 +76,25 @@ impl Transport {
 
         tcp_client.set_read_timeout(Some(options.read_timeout))?;
         tcp_client.set_write_timeout(Some(options.write_timeout))?;
-
-        let mut t = Transport {
+        Ok(Transport {
             options,
             stream: Mutex::new(tcp_client),
-        };
-        t.negotiate()?;
-        Ok(t)
+        })
     }
 
-    fn negotiate(&mut self) -> Result<(), Error> {
-        self.iso_connect()?;
-        self.negotiate_pdu_length()
+    fn set_tsap(&mut self, conn_type: transport::Connection) {
+        let mut remote_tsap =
+            ((conn_type as u16) << 8) as u16 + (self.options.rack * 0x20) + self.options.slot;
+        let local_tsap: u16 = 0x0100 & 0x0000FFFF;
+        remote_tsap = remote_tsap & 0x0000FFFF;
+
+        self.options.local_tsap = local_tsap;
+        self.options.local_tsap_high = (local_tsap >> 8) as u8;
+        self.options.local_tsap_low = (local_tsap & 0x00FF) as u8;
+
+        self.options.remote_tsap = remote_tsap;
+        self.options.remote_tsap_high = (remote_tsap >> 8) as u8;
+        self.options.remote_tsap_low = (remote_tsap as u8) & 0x00FF;
     }
 
     fn iso_connect(&mut self) -> Result<(), Error> {
@@ -101,17 +108,20 @@ impl Transport {
         let r = self.send(msg.as_slice());
 
         let n = match r {
-            Ok(n) => n.len(),
+            Ok(n) => {
+                println!("{:?}", n);
+                n.len()
+            }
             Err(e) => return Err(Error::Connect(e.to_string())),
         };
 
         // Sends the connection request telegram
-        if n == msg.len() {
-            if self.options.last_pdu_type == transport::CONFIRM_CONNECTION {
-                return Err(Error::Iso);
-            }
-        } else {
+        if n != msg.len() {
             return Err(Error::PduLength(n as i32));
+        }
+
+        if self.options.last_pdu_type != transport::CONFIRM_CONNECTION {
+            return Err(Error::Iso);
         }
         Ok(())
     }
@@ -177,10 +187,16 @@ impl PackTrait for Transport {
 
         // Receives the S7 Payload
         stream.read(&mut data[7..length as usize])?;
-        Ok(data)
+        Ok(data[0..length as usize].to_vec())
     }
 
     fn pdu_length(&self) -> i32 {
         self.options.pdu_length
+    }
+
+    fn negotiate(&mut self, conn_type: transport::Connection) -> Result<(), Error> {
+        self.set_tsap(conn_type);
+        self.iso_connect()?;
+        self.negotiate_pdu_length()
     }
 }
