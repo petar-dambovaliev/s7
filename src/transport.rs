@@ -27,7 +27,7 @@ pub trait Transport {
     fn send(&mut self, request: &[u8]) -> Result<Vec<u8>, Error>;
     /// pdu length needs to be set by the implementor, during the connection phase.
     fn pdu_length(&self) -> i32;
-
+    /// pdu length needs to be set by the implementor, during the connection phase.
     fn negotiate(&mut self, conn_type: Connection) -> Result<(), Error>;
 }
 

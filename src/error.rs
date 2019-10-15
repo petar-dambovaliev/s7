@@ -82,6 +82,7 @@ pub enum Error {
     Send,
     Iso,
     PduLength(i32),
+    TryFrom(Vec<u8>, String),
 }
 
 impl fmt::Display for Error {
@@ -98,6 +99,9 @@ impl fmt::Display for Error {
             Error::Send => write!(f, "Send connection error"),
             Error::Iso => write!(f, "ISO connection error"),
             Error::PduLength(pdu) => write!(f, "PDU length connection error {}", pdu),
+            Error::TryFrom(bytes, reason) => {
+                write!(f, "Could not read bytes {:?} reason {}", bytes, reason)
+            }
         }
     }
 }

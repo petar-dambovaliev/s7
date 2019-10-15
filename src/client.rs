@@ -38,6 +38,7 @@ impl<T: Transport> PG<T> {
     /// use std::net::{Ipv4Addr, IpAddr};
     /// use s7::{client, tcp, transport};
     /// use std::time::Duration;
+    /// use s7::field::{Bool, Field};
     ///
     /// let addr = Ipv4Addr::new(127, 0, 0, 1);
     /// let mut opts = tcp::Options::new(IpAddr::from(addr), 5, 5);
@@ -46,14 +47,18 @@ impl<T: Transport> PG<T> {
     /// opts.write_timeout = Duration::from_secs(2);
     ///
     /// let t = tcp::Transport::connect(opts).unwrap();
-    /// let mut cl = client::PG::new(t);
+    /// let mut cl = client::PG::new(t)?;
     ///
     /// let buffer = &mut vec![0u8; 1];
+    /// let db = 888;
+    /// let offset = 8.4;
+    /// let size = 1;
     ///
-    /// match cl.db_read(888, 8, 1, buffer) {
-    ///       Ok(()) => println!("buffer: {:?}", buffer),
-    ///       Err(e) => println!("error: {:?}", e)
-    /// }
+    /// cl.db_read(db, offset as i32, size, buffer)?;
+    /// let mut  lights = Bool::new(db, offset, buffer.to_vec())?;
+    ///  lights.set_value(!lights.value()); // toggle the light switch
+    /// cl.db_write(lights.data_block(), lights.offset(), Bool::size(), lights.to_bytes().as_mut())?;
+    ///
     /// ```
     pub fn db_read(
         &mut self,

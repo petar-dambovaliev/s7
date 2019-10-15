@@ -4,7 +4,7 @@ A simple library that can be used to communicate with Siemens S7 family PLC devi
  This crate provides communication tools for Siemens s7 family devices
  So far only `PG.db_read` and `PG.db_write` have been tested on actual hardware
  The crate is unstable as of now and provides no guarantees
- ####Examples
+ # examples
  ```
 extern crate s7;
 use s7::{client, tcp, transport};
@@ -22,12 +22,15 @@ fn main() {
     let t = tcp::Transport::connect(opts).unwrap();
     let mut cl = client::PG::new(t);
 
-    let buffer = &mut vec![0u8; 255];
-
-    match cl.db_read(888, 8, 1, buffer) {
-      Ok(()) => println!("buffer: {:?}", buffer),
-      Err(e) => println!("error: {:?}", e),
-    }
+    let buffer = &mut vec![0u8; 1];
+    let db = 888;
+    let offset = 8.4;
+    let size = 1;
+    
+    cl.db_read(db, offset as i32, size, buffer)?;
+    let mut  lights = Bool::new(db, offset, buffer.to_vec())?;
+     lights.set_value(!lights.value()); // toggle the light switch
+    cl.db_write(lights.data_block(), lights.offset(), Bool::size(), lights.to_bytes().as_mut())?;
 }
  ```
 # License

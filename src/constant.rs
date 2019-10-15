@@ -4,8 +4,13 @@
 pub enum Area {
     ProcessInput = 0x81,
     ProcessOutput = 0x82,
+    /// Merkers are address registers within the CPU.
+    /// The number of available flag bytes depends on the respective CPU and can be taken from the technical data.
+    /// You can use flag bits, flag bytes, flag words or flag double words in a PLC program.
     Merker = 0x83,
-    DataBausteine = 0x84, //German thing, means building blocks
+    /// German thing, means building blocks
+    /// This is your storage  
+    DataBausteine = 0x84,
     Counter = 0x1C,
     Timer = 0x1D,
     Unknown,

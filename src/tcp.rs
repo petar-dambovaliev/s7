@@ -108,10 +108,7 @@ impl Transport {
         let r = self.send(msg.as_slice());
 
         let n = match r {
-            Ok(n) => {
-                println!("{:?}", n);
-                n.len()
-            }
+            Ok(n) => n.len(),
             Err(e) => return Err(Error::Connect(e.to_string())),
         };
 
@@ -151,7 +148,7 @@ impl Transport {
     }
 }
 
-impl PackTrait for Transport {
+impl<'a> PackTrait for Transport {
     fn send(&mut self, request: &[u8]) -> Result<Vec<u8>, Error> {
         // Send sends data to server and ensures response length is greater than header length.
         let mut stream = match self.stream.lock() {
