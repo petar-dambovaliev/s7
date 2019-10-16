@@ -1,7 +1,7 @@
 // Area ID
 #[derive(Clone, Copy)]
 #[allow(dead_code)]
-pub enum Area {
+pub(crate) enum Area {
     ProcessInput = 0x81,
     ProcessOutput = 0x82,
     /// Merkers are address registers within the CPU.

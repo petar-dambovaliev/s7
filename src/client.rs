@@ -7,8 +7,6 @@ use super::error::{self, Error};
 use super::transport::{self, Transport};
 use byteorder::{BigEndian, ByteOrder};
 
-///! Client allows for communication with S7 family devices
-///
 /// Connect to the PLC as a PG (Programmiergeräte). German for programming device.
 #[derive(Debug, Clone)]
 pub struct PG<T: Transport> {
@@ -47,17 +45,25 @@ impl<T: Transport> PG<T> {
     /// opts.write_timeout = Duration::from_secs(2);
     ///
     /// let t = tcp::Transport::connect(opts).unwrap();
-    /// let mut cl = client::PG::new(t)?;
+    /// let mut cl = client::PG::new(t).unwrap();
     ///
-    /// let buffer = &mut vec![0u8; 1];
+    /// let buffer = &mut vec![0u8; Bool::size() as usize];
     /// let db = 888;
     /// let offset = 8.4;
     /// let size = 1;
     ///
-    /// cl.db_read(db, offset as i32, size, buffer)?;
-    /// let mut  lights = Bool::new(db, offset, buffer.to_vec())?;
-    ///  lights.set_value(!lights.value()); // toggle the light switch
-    /// cl.db_write(lights.data_block(), lights.offset(), Bool::size(), lights.to_bytes().as_mut())?;
+    /// cl.db_read(db, offset as i32, size, buffer).unwrap();
+    ///
+    /// let mut  lights = Bool::new(db, offset, buffer.to_vec()).unwrap();
+    /// lights.set_value(!lights.value()); // toggle the light switch
+    ///
+    /// // save
+    /// cl.db_write(
+    ///     lights.data_block(),
+    ///     lights.offset(),
+    ///     Bool::size(),
+    ///     lights.to_bytes().as_mut()
+    /// ).unwrap();
     ///
     /// ```
     pub fn db_read(
@@ -83,6 +89,7 @@ impl<T: Transport> PG<T> {
     /// use std::net::{Ipv4Addr, IpAddr};
     /// use s7::{client, tcp, transport};
     /// use std::time::Duration;
+    /// use s7::field::{Bool, Field};
     ///
     /// let addr = Ipv4Addr::new(127, 0, 0, 1);
     /// let mut opts = tcp::Options::new(IpAddr::from(addr), 5, 5);
@@ -90,16 +97,27 @@ impl<T: Transport> PG<T> {
     /// opts.read_timeout = Duration::from_secs(2);
     /// opts.write_timeout = Duration::from_secs(2);
     ///
-    ///
     /// let t = tcp::Transport::connect(opts).unwrap();
-    /// let mut cl = client::PG::new(t);
+    /// let mut cl = client::PG::new(t).unwrap();
     ///
-    /// let buffer = &mut vec![0u8; 1];
+    /// let buffer = &mut vec![0u8; Bool::size() as usize];
+    /// let db = 888;
+    /// let offset = 8.4;
+    /// let size = 1;
     ///
-    /// match cl.db_write(888, 8, 1, buffer) {
-    ///       Ok(()) => println!("buffer: {:?}", buffer),
-    ///       Err(e) => println!("error: {:?}", e)
-    /// }
+    /// cl.db_read(db, offset as i32, size, buffer).unwrap();
+    ///
+    /// let mut  lights = Bool::new(db, offset, buffer.to_vec()).unwrap();
+    /// lights.set_value(!lights.value()); // toggle the light switch
+    ///
+    /// // save
+    /// cl.db_write(
+    ///     lights.data_block(),
+    ///     lights.offset(),
+    ///     Bool::size(),
+    ///     lights.to_bytes().as_mut()
+    /// ).unwrap();
+    ///
     /// ```
     pub fn db_write(
         &mut self,
@@ -133,14 +151,11 @@ impl<T: Transport> PG<T> {
     ///
     ///
     /// let t = tcp::Transport::connect(opts).unwrap();
-    /// let mut cl = client::PG::new(t);
+    /// let mut cl = client::PG::new(t).unwrap();
     ///
     /// let buffer = &mut vec![0u8; 255];
     ///
-    /// match cl.mb_read(1, 3, buffer) {
-    ///       Ok(()) => println!("buffer: {:?}", buffer),
-    ///       Err(e) => println!("error: {:?}", e)
-    /// }
+    /// cl.mb_read(1, 3, buffer).unwrap();
     /// ```
     pub fn mb_read(&mut self, start: i32, size: i32, buffer: &mut Vec<u8>) -> Result<(), Error> {
         return self.read(Area::Merker, 0, start, size, constant::WL_BYTE, buffer);
@@ -161,14 +176,11 @@ impl<T: Transport> PG<T> {
     ///
     ///
     /// let t = tcp::Transport::connect(opts).unwrap();
-    /// let mut cl = client::PG::new(t);
+    /// let mut cl = client::PG::new(t).unwrap();
     ///
     /// let buffer = &mut vec![0u8; 255];
     ///
-    /// match cl.mb_write(1, 3, buffer) {
-    ///       Ok(()) => println!("buffer: {:?}", buffer),
-    ///       Err(e) => println!("error: {:?}", e)
-    /// }
+    /// cl.mb_write(1, 3, buffer).unwrap();
     /// ```
     pub fn mb_write(&mut self, start: i32, size: i32, buffer: &mut Vec<u8>) -> Result<(), Error> {
         return self.write(Area::Merker, 0, start, size, constant::WL_BYTE, buffer);
@@ -189,14 +201,11 @@ impl<T: Transport> PG<T> {
     ///
     ///
     /// let t = tcp::Transport::connect(opts).unwrap();
-    /// let mut cl = client::PG::new(t);
+    /// let mut cl = client::PG::new(t).unwrap();
     ///
     /// let buffer = &mut vec![0u8; 255];
     ///
-    /// match cl.eb_read(1, 3, buffer) {
-    ///       Ok(()) => println!("buffer: {:?}", buffer),
-    ///       Err(e) => println!("error: {:?}", e)
-    /// }
+    /// cl.eb_read(1, 3, buffer).unwrap();
     /// ```
     pub fn eb_read(&mut self, start: i32, size: i32, buffer: &mut Vec<u8>) -> Result<(), Error> {
         return self.read(
@@ -224,14 +233,11 @@ impl<T: Transport> PG<T> {
     ///
     ///
     /// let t = tcp::Transport::connect(opts).unwrap();
-    /// let mut cl = client::PG::new(t);
+    /// let mut cl = client::PG::new(t).unwrap();
     ///
     /// let buffer = &mut vec![0u8; 255];
     ///
-    /// match cl.eb_write(1, 3, buffer) {
-    ///       Ok(()) => println!("buffer: {:?}", buffer),
-    ///       Err(e) => println!("error: {:?}", e)
-    /// }
+    /// cl.eb_write(1, 3, buffer).unwrap();
     /// ```
     pub fn eb_write(&mut self, start: i32, size: i32, buffer: &mut Vec<u8>) -> Result<(), Error> {
         return self.write(
@@ -259,14 +265,11 @@ impl<T: Transport> PG<T> {
     ///
     ///
     /// let t = tcp::Transport::connect(opts).unwrap();
-    /// let mut cl = client::PG::new(t);
+    /// let mut cl = client::PG::new(t).unwrap();
     ///
     /// let buffer = &mut vec![0u8; 255];
     ///
-    /// match cl.ab_read(1, 3, buffer) {
-    ///       Ok(()) => println!("buffer: {:?}", buffer),
-    ///       Err(e) => println!("error: {:?}", e)
-    /// }
+    /// cl.ab_read(1, 3, buffer).unwrap();
     /// ```
     pub fn ab_read(&mut self, start: i32, size: i32, buffer: &mut Vec<u8>) -> Result<(), Error> {
         return self.read(
@@ -294,14 +297,11 @@ impl<T: Transport> PG<T> {
     ///
     ///
     /// let t = tcp::Transport::connect(opts).unwrap();
-    /// let mut cl = client::PG::new(t);
+    /// let mut cl = client::PG::new(t).unwrap();
     ///
     /// let buffer = &mut vec![0u8; 255];
     ///
-    /// match cl.ab_write(1, 3, buffer) {
-    ///       Ok(()) => println!("buffer: {:?}", buffer),
-    ///       Err(e) => println!("error: {:?}", e)
-    /// }
+    /// cl.ab_write(1, 3, buffer).unwrap();
     /// ```
     pub fn ab_write(&mut self, start: i32, size: i32, buffer: &mut Vec<u8>) -> Result<(), Error> {
         return self.write(
@@ -604,6 +604,7 @@ impl<T: Transport> OP<T> {
         )
     }
 
+    /// Shut down
     pub fn stop(&mut self) -> Result<(), Error> {
         self.cold_warm_start_stop(
             transport::STOP_TELEGRAM.as_ref(),

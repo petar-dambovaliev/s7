@@ -7,9 +7,10 @@ A simple library that can be used to communicate with Siemens S7 family PLC devi
  # examples
  ```
 extern crate s7;
-use s7::{client, tcp, transport};
+use s7::field::Float;
+use s7::{client, field::Bool, field::Field, field::Fields, tcp};
+use std::net::{IpAddr, Ipv4Addr};
 use std::time::Duration;
-use std::net::{Ipv4Addr, IpAddr};
 
 fn main() {
     let addr = Ipv4Addr::new(127, 0, 0, 1);
@@ -18,19 +19,45 @@ fn main() {
     opts.read_timeout = Duration::from_secs(2);
     opts.write_timeout = Duration::from_secs(2);
 
-
     let t = tcp::Transport::connect(opts).unwrap();
-    let mut cl = client::PG::new(t);
+    let mut cl = client::PG::new(t).unwrap();
 
-    let buffer = &mut vec![0u8; 1];
+    let buffer = &mut vec![0u8; Bool::size() as usize];
     let db = 888;
+
+    // the offset in the PLC is represented by a float
+    // the difit on the left is the index within the block
+    // the digit after the decimal point is only important for the `Bool` to be able to change the relevant bit
+    // we don't need after
     let offset = 8.4;
-    let size = 1;
-    
-    cl.db_read(db, offset as i32, size, buffer)?;
-    let mut  lights = Bool::new(db, offset, buffer.to_vec())?;
-     lights.set_value(!lights.value()); // toggle the light switch
-    cl.db_write(lights.data_block(), lights.offset(), Bool::size(), lights.to_bytes().as_mut())?;
+
+    // Since this is a boolean field, we are going to get back 1 byte
+    cl.db_read(db, offset as i32, Bool::size(), buffer).unwrap();
+
+    // field mod provides types to handle the data from the PLC
+    // create a bool field from the byte we got
+    let mut lights = Bool::new(db, offset, buffer.to_vec()).unwrap();
+
+    // the bit in the byte is set without changing any of the other bits
+    lights.set_value(!lights.value()); // toggle the light switch
+
+    let mut cooling_buffer = vec![0u8; Float::size() as usize];
+    cl.db_read(db, offset as i32, Bool::size(), cooling_buffer.as_mut())
+        .unwrap();
+    let mut cooling = Float::new(888, 12.0, cooling_buffer).unwrap();
+
+    let fields: Fields = vec![Box::new(lights), Box::new(cooling)];
+
+    // save back the changed values
+    for field in fields.iter() {
+        cl.db_write(
+            field.data_block(),
+            field.offset(),
+            field.to_bytes().len() as i32,
+            field.to_bytes().as_mut(),
+        )
+        .unwrap();
+    }
 }
  ```
 # License
