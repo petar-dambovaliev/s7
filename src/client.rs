@@ -7,27 +7,15 @@ use super::error::{self, Error};
 use super::transport::{self, Transport};
 use byteorder::{BigEndian, ByteOrder};
 
-/// Connect to the PLC as a PG (Programmiergeräte). German for programming device.
 #[derive(Debug, Clone)]
-pub struct PG<T: Transport> {
-    transport: T,
-}
-/// Connect to the PLC as an OP (Operator). Console operator control.
-#[derive(Debug, Clone)]
-pub struct OP<T: Transport> {
+pub struct Client<T: Transport> {
     transport: T,
 }
 
-///! Not implemented
-#[derive(Debug, Clone)]
-struct Basic<T: Transport> {
-    transport: T,
-}
-
-impl<T: Transport> PG<T> {
-    pub fn new(mut transport: T) -> Result<PG<T>, Error> {
-        transport.negotiate(transport::Connection::PG)?;
-        Ok(PG { transport })
+impl<T: Transport> Client<T> {
+    pub fn new(mut transport: T) -> Result<Client<T>, Error> {
+        transport.negotiate(transport::Connection::OP)?;
+        Ok(Client { transport })
     }
 
     /// # Examples
@@ -45,20 +33,19 @@ impl<T: Transport> PG<T> {
     /// opts.write_timeout = Duration::from_secs(2);
     ///
     /// let t = tcp::Transport::connect(opts).unwrap();
-    /// let mut cl = client::PG::new(t).unwrap();
+    /// let mut cl = client::Client::new(t).unwrap();
     ///
     /// let buffer = &mut vec![0u8; Bool::size() as usize];
     /// let db = 888;
     /// let offset = 8.4;
-    /// let size = 1;
     ///
-    /// cl.db_read(db, offset as i32, size, buffer).unwrap();
+    /// cl.ag_read(db, offset as i32, Bool::size(), buffer).unwrap();
     ///
     /// let mut  lights = Bool::new(db, offset, buffer.to_vec()).unwrap();
     /// lights.set_value(!lights.value()); // toggle the light switch
     ///
     /// // save
-    /// cl.db_write(
+    /// cl.ag_write(
     ///     lights.data_block(),
     ///     lights.offset(),
     ///     Bool::size(),
@@ -66,7 +53,7 @@ impl<T: Transport> PG<T> {
     /// ).unwrap();
     ///
     /// ```
-    pub fn db_read(
+    pub fn ag_read(
         &mut self,
         db_number: i32,
         start: i32,
@@ -98,20 +85,19 @@ impl<T: Transport> PG<T> {
     /// opts.write_timeout = Duration::from_secs(2);
     ///
     /// let t = tcp::Transport::connect(opts).unwrap();
-    /// let mut cl = client::PG::new(t).unwrap();
+    /// let mut cl = client::Client::new(t).unwrap();
     ///
     /// let buffer = &mut vec![0u8; Bool::size() as usize];
     /// let db = 888;
     /// let offset = 8.4;
-    /// let size = 1;
     ///
-    /// cl.db_read(db, offset as i32, size, buffer).unwrap();
+    /// cl.ag_read(db, offset as i32, Bool::size(), buffer).unwrap();
     ///
     /// let mut  lights = Bool::new(db, offset, buffer.to_vec()).unwrap();
     /// lights.set_value(!lights.value()); // toggle the light switch
     ///
     /// // save
-    /// cl.db_write(
+    /// cl.ag_write(
     ///     lights.data_block(),
     ///     lights.offset(),
     ///     Bool::size(),
@@ -119,7 +105,7 @@ impl<T: Transport> PG<T> {
     /// ).unwrap();
     ///
     /// ```
-    pub fn db_write(
+    pub fn ag_write(
         &mut self,
         db_number: i32,
         start: i32,
@@ -151,7 +137,7 @@ impl<T: Transport> PG<T> {
     ///
     ///
     /// let t = tcp::Transport::connect(opts).unwrap();
-    /// let mut cl = client::PG::new(t).unwrap();
+    /// let mut cl = client::Client::new(t).unwrap();
     ///
     /// let buffer = &mut vec![0u8; 255];
     ///
@@ -176,7 +162,7 @@ impl<T: Transport> PG<T> {
     ///
     ///
     /// let t = tcp::Transport::connect(opts).unwrap();
-    /// let mut cl = client::PG::new(t).unwrap();
+    /// let mut cl = client::Client::new(t).unwrap();
     ///
     /// let buffer = &mut vec![0u8; 255];
     ///
@@ -201,7 +187,7 @@ impl<T: Transport> PG<T> {
     ///
     ///
     /// let t = tcp::Transport::connect(opts).unwrap();
-    /// let mut cl = client::PG::new(t).unwrap();
+    /// let mut cl = client::Client::new(t).unwrap();
     ///
     /// let buffer = &mut vec![0u8; 255];
     ///
@@ -233,7 +219,7 @@ impl<T: Transport> PG<T> {
     ///
     ///
     /// let t = tcp::Transport::connect(opts).unwrap();
-    /// let mut cl = client::PG::new(t).unwrap();
+    /// let mut cl = client::Client::new(t).unwrap();
     ///
     /// let buffer = &mut vec![0u8; 255];
     ///
@@ -265,7 +251,7 @@ impl<T: Transport> PG<T> {
     ///
     ///
     /// let t = tcp::Transport::connect(opts).unwrap();
-    /// let mut cl = client::PG::new(t).unwrap();
+    /// let mut cl = client::Client::new(t).unwrap();
     ///
     /// let buffer = &mut vec![0u8; 255];
     ///
@@ -297,7 +283,7 @@ impl<T: Transport> PG<T> {
     ///
     ///
     /// let t = tcp::Transport::connect(opts).unwrap();
-    /// let mut cl = client::PG::new(t).unwrap();
+    /// let mut cl = client::Client::new(t).unwrap();
     ///
     /// let buffer = &mut vec![0u8; 255];
     ///
@@ -577,11 +563,7 @@ impl<T: Transport> PG<T> {
     }
 }
 
-impl<T: Transport> OP<T> {
-    pub fn new(mut transport: T) -> Result<OP<T>, Error> {
-        transport.negotiate(transport::Connection::OP)?;
-        Ok(OP { transport })
-    }
+impl<T: Transport> Client<T> {
     /// Starting the CPU from power off,Current configuration is discarded and program processing begins again with the initial values.
     pub fn start(&mut self) -> Result<(), Error> {
         self.cold_warm_start_stop(
@@ -624,15 +606,16 @@ impl<T: Transport> OP<T> {
     ) -> Result<(), Error> {
         let response = self.transport.send(req)?;
 
-        if response.len() <= transport::TELEGRAM_MIN_RESPONSE {
+        if response.len() < transport::TELEGRAM_MIN_RESPONSE {
             return Err(Error::Response {
                 code: error::ISO_INVALID_PDU,
             });
         }
-        if response[19] != start_cmp {
+
+        if response[17] != start_cmp {
             return Err(Error::Response { code: start });
         }
-        if response[20] == already_cmp {
+        if response[18] == already_cmp {
             return Err(Error::Response { code: already });
         }
         Ok(())

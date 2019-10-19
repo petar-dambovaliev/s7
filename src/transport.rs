@@ -2,17 +2,24 @@
 // This software may be modified and distributed under the terms
 // of the BSD license. See the LICENSE file for details.
 
+//! Transport definition for PLC
+
 use super::constant;
 use super::error::Error;
 
 /// Client Connection Type
+/// 16 possible connections limited by the hardware
+/// The types are defined from the highest to lowest priority
+/// The basic connections are the first which would be closed
+/// if there aren't enough resources
 #[derive(Debug, Copy, Clone)]
 pub enum Connection {
-    /// Connect to the PLC as a PG (Programmiergeräte). German for programming device.
+    /// Connect to the PLC programming console (Programmiergeräte). German for programming device.
     PG = 1,
-    /// Connect to the PLC as an OP (Operator). Console operator control.
+    /// Connect to the PLC Siemens HMI panel
     OP = 2,
-    /// Basic connection
+    /// Basic connection for generic data transfer connection
+    /// 14 Basic connections
     Basic = 3,
 }
 
@@ -27,7 +34,7 @@ pub trait Transport {
     fn send(&mut self, request: &[u8]) -> Result<Vec<u8>, Error>;
     /// pdu length needs to be set by the implementor, during the connection phase.
     fn pdu_length(&self) -> i32;
-    /// pdu length needs to be set by the implementor, during the connection phase.
+    /// negotiate is called by the client and should only be defined by the implementor
     fn negotiate(&mut self, conn_type: Connection) -> Result<(), Error>;
 }
 
@@ -127,7 +134,7 @@ pub(crate) const STOP_TELEGRAM: [u8; 33] = [
     82, 79, 71, 82, 65, 77,
 ];
 
-pub(crate) const TELEGRAM_MIN_RESPONSE: usize = 19;
+pub(crate) const TELEGRAM_MIN_RESPONSE: usize = 18;
 
 pub(crate) const PDU_START: u8 = 0x28; // CPU start
 pub(crate) const PDU_STOP: u8 = 0x29; // CPU stop

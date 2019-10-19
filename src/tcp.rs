@@ -2,7 +2,10 @@
 // This software may be modified and distributed under the terms
 // of the BSD license. See the LICENSE file for details.
 
+//! TCP transport implementation
+
 extern crate byteorder;
+
 use super::error::{self, Error};
 use super::transport::{self, Transport as PackTrait};
 use byteorder::{BigEndian, ByteOrder};
@@ -148,7 +151,7 @@ impl Transport {
     }
 }
 
-impl<'a> PackTrait for Transport {
+impl PackTrait for Transport {
     fn send(&mut self, request: &[u8]) -> Result<Vec<u8>, Error> {
         // Send sends data to server and ensures response length is greater than header length.
         let mut stream = match self.stream.lock() {
