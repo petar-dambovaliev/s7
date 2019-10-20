@@ -35,7 +35,9 @@ pub trait Transport {
     /// pdu length needs to be set by the implementor, during the connection phase.
     fn pdu_length(&self) -> i32;
     /// negotiate is called by the client and should only be defined by the implementor
-    fn negotiate(&mut self, conn_type: Connection) -> Result<(), Error>;
+    fn negotiate(&mut self) -> Result<(), Error>;
+
+    fn connection_type(&self) -> Connection;
 }
 
 /// response from the plc that the connection has been confirmed
@@ -134,10 +136,44 @@ pub(crate) const STOP_TELEGRAM: [u8; 33] = [
     82, 79, 71, 82, 65, 77,
 ];
 
-pub(crate) const TELEGRAM_MIN_RESPONSE: usize = 18;
+/// get plc status telegram
+pub(crate) const PLC_STATUS_TELEGRAM: [u8; 33] = [
+    3, 0, 0, 33, 2, 240, 128, 50, 7, 0, 0, 44, 0, 0, 8, 0, 8, 0, 1, 18, 4, 17, 68, 1, 0, 255, 9, 0,
+    4, 4, 36, 0, 0,
+];
+
+pub(crate) const SZL_FIRST_TELEGRAM: [u8; 33] = [
+    3, 0, 0, 33, 2, 240, 128, 50, 7, 0, 0, 5, 0, // Sequence out
+    0, 8, 0, 8, 0, 1, 18, 4, 17, 68, 1, 0, 255, 9, 0, 4, 0, 0, // ID (29)
+    0, 0,
+]; // Index (31)];
+
+pub(crate) const MIN_SZL_FIRST_TELEGRAM: usize = 42;
+
+pub(crate) const SZL_NEXT_TELEGRAM: [u8; 33] = [
+    3, 0, 0, 33, 2, 240, 128, 50, 7, 0, 0, 6, 0, 0, 12, 0, 4, 0, 1, 18, 8, 18, 68, 1,
+    1, // Sequence
+    0, 0, 0, 0, 10, 0, 0, 0,
+]; // Index (31)];
+
+pub(crate) const PLC_STATUS_MIN_RESPONSE: usize = 45;
+
+pub(crate) const TELEGRAM_MIN_RESPONSE: usize = 19;
+
+pub(crate) const SZL_MIN_RESPONSE: usize = 205;
 
 pub(crate) const PDU_START: u8 = 0x28; // CPU start
 pub(crate) const PDU_STOP: u8 = 0x29; // CPU stop
 
 pub(crate) const PDU_ALREADY_STARTED: u8 = 0x02; // CPU already in run mode
 pub(crate) const PDU_ALREADY_STOPPED: u8 = 0x07; // CPU already in stop mode
+
+pub(crate) struct SZLHeader {
+    pub length_header: u16,
+    pub number_of_data_record: u16,
+}
+
+pub(crate) struct S7SZL {
+    pub header: SZLHeader,
+    pub data: Vec<u8>,
+}

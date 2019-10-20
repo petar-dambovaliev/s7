@@ -8,6 +8,7 @@ extern crate byteorder;
 
 use super::error::{self, Error};
 use super::transport::{self, Transport as PackTrait};
+use crate::transport::Connection;
 use byteorder::{BigEndian, ByteOrder};
 use std::io::{Read, Write};
 use std::net::IpAddr;
@@ -37,7 +38,7 @@ pub struct Options {
     pub read_timeout: Duration,
     pub write_timeout: Duration,
     address: String,
-    conn_type: transport::Connection,
+    pub conn_type: transport::Connection,
     rack: u16,
     slot: u16,
     //Transport Service Access Point
@@ -53,12 +54,12 @@ pub struct Options {
 }
 
 impl Options {
-    pub fn new(address: IpAddr, rack: u16, slot: u16) -> Options {
+    pub fn new(address: IpAddr, rack: u16, slot: u16, conn_type: Connection) -> Options {
         Options {
             read_timeout: Duration::new(0, 0),
             write_timeout: Duration::new(0, 0),
             address: format!("{}:{}", address.to_string(), ISO_TCP.to_string()), //ip:102,
-            conn_type: transport::Connection::PG,                                // default
+            conn_type,
             rack,
             slot,
             local_tsap: 0,
@@ -85,9 +86,10 @@ impl Transport {
         })
     }
 
-    fn set_tsap(&mut self, conn_type: transport::Connection) {
-        let mut remote_tsap =
-            ((conn_type as u16) << 8) as u16 + (self.options.rack * 0x20) + self.options.slot;
+    fn set_tsap(&mut self) {
+        let mut remote_tsap = ((self.connection_type() as u16) << 8) as u16
+            + (self.options.rack * 0x20)
+            + self.options.slot;
         let local_tsap: u16 = 0x0100 & 0x0000FFFF;
         remote_tsap = remote_tsap & 0x0000FFFF;
 
@@ -194,9 +196,13 @@ impl PackTrait for Transport {
         self.options.pdu_length
     }
 
-    fn negotiate(&mut self, conn_type: transport::Connection) -> Result<(), Error> {
-        self.set_tsap(conn_type);
+    fn negotiate(&mut self) -> Result<(), Error> {
+        self.set_tsap();
         self.iso_connect()?;
         self.negotiate_pdu_length()
+    }
+
+    fn connection_type(&self) -> Connection {
+        self.options.conn_type
     }
 }

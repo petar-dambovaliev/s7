@@ -1,3 +1,5 @@
+use crate::error::Error;
+
 // Area ID
 #[derive(Clone, Copy)]
 #[allow(dead_code)]
@@ -39,13 +41,22 @@ pub fn data_size_byte(word_length: i32) -> i32 {
 }
 
 // PLC Status
-//todo implement start stop status commands
-#[allow(dead_code)]
-pub const CPU_STATUS_UNKNOWN: i32 = 0;
-#[allow(dead_code)]
-pub const CPU_STATUS_RUN: i32 = 8;
-#[allow(dead_code)]
-pub const CPU_STATUS_STOP: i32 = 4;
+pub enum CpuStatus {
+    Unknown = 0,
+    Stop = 4,
+    Run = 8,
+}
+
+impl CpuStatus {
+    pub(crate) fn from_u8(value: u8) -> Result<CpuStatus, Error> {
+        match value {
+            0 => Ok(CpuStatus::Unknown),
+            4 => Ok(CpuStatus::Stop),
+            8 => Ok(CpuStatus::Run),
+            _ => Err(Error::InvalidCpuStatus(value)),
+        }
+    }
+}
 
 //size header
 pub const SIZE_HEADER_READ: i32 = 31; // Header Size when Reading

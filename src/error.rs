@@ -28,7 +28,7 @@ const CLI_TOO_MANY_ITEMS: i32 = 0x00400000;
 const CLI_INVALID_DWORD_LEN: i32 = 0x00500000;
 const CLI_PARTIAL_DATA_WRITTEN: i32 = 0x00600000;
 const CLI_SIZE_OVER_PDU: i32 = 0x00700000;
-const CLI_INVALID_PLC_ANSWER: i32 = 0x00800000;
+pub(crate) const CLI_INVALID_PLC_ANSWER: i32 = 0x00800000;
 const CLI_ADDRESS_OUT_OF_RANGE: i32 = 0x00900000;
 const CLI_INVALID_TRANSPORT_SIZE: i32 = 0x00A00000;
 const CLI_WRITE_DATA_SIZE_MISMATCH: i32 = 0x00B00000;
@@ -83,6 +83,8 @@ pub enum Error {
     Iso,
     PduLength(i32),
     TryFrom(Vec<u8>, String),
+    InvalidCpuStatus(u8),
+    InvalidResponse { reason: String, bytes: Vec<u8> },
 }
 
 impl fmt::Display for Error {
@@ -101,6 +103,10 @@ impl fmt::Display for Error {
             Error::PduLength(pdu) => write!(f, "PDU length connection error {}", pdu),
             Error::TryFrom(bytes, reason) => {
                 write!(f, "Could not read bytes {:?} reason {}", bytes, reason)
+            }
+            Error::InvalidCpuStatus(status) => write!(f, "Invalid cpu status {}", status),
+            Error::InvalidResponse { reason, bytes } => {
+                write!(f, "Invalid response {:?} err {}", bytes, reason)
             }
         }
     }

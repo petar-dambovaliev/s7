@@ -1,10 +1,10 @@
 [package]
 name = "s7"
-version = "0.1.8"
+version = "0.1.9"
 authors = ["Petar Dambovaliev <petar.atanasov.1987@gmail.com>"]
 edition = "2018"
 description = "A simple library that can be used to communicate with Siemens S7 family PLC devices"
-keywords = ["siemens", "s7", "plc"]
+keywords = ["siemens", "s7", "plc", "simatic"]
 license-file = "LICENSE.md"
 repository = "https://github.com/petar-dambovaliev/s7"
 readme = "README.md"

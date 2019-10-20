@@ -5,7 +5,26 @@
 use super::constant::{self, Area};
 use super::error::{self, Error};
 use super::transport::{self, Transport};
+use crate::constant::CpuStatus;
 use byteorder::{BigEndian, ByteOrder};
+use std::str;
+
+#[derive(Debug, Clone)]
+pub struct CpuInfo {
+    module_type_name: String,
+    serial_number: String,
+    as_name: String,
+    copyright: String,
+    module_name: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct CPInfo {
+    max_pdu_length: u16,
+    max_connections: u16,
+    max_mpi_rate: u16,
+    max_bus_rate: u16,
+}
 
 #[derive(Debug, Clone)]
 pub struct Client<T: Transport> {
@@ -14,7 +33,7 @@ pub struct Client<T: Transport> {
 
 impl<T: Transport> Client<T> {
     pub fn new(mut transport: T) -> Result<Client<T>, Error> {
-        transport.negotiate(transport::Connection::OP)?;
+        transport.negotiate()?;
         Ok(Client { transport })
     }
 
@@ -27,7 +46,7 @@ impl<T: Transport> Client<T> {
     /// use s7::field::{Bool, Field};
     ///
     /// let addr = Ipv4Addr::new(127, 0, 0, 1);
-    /// let mut opts = tcp::Options::new(IpAddr::from(addr), 5, 5);
+    /// let mut opts = tcp::Options::new(IpAddr::from(addr), 5, 5, transport::Connection::PG);
     ///
     /// opts.read_timeout = Duration::from_secs(2);
     /// opts.write_timeout = Duration::from_secs(2);
@@ -79,7 +98,7 @@ impl<T: Transport> Client<T> {
     /// use s7::field::{Bool, Field};
     ///
     /// let addr = Ipv4Addr::new(127, 0, 0, 1);
-    /// let mut opts = tcp::Options::new(IpAddr::from(addr), 5, 5);
+    /// let mut opts = tcp::Options::new(IpAddr::from(addr), 5, 5, transport::Connection::PG);
     ///
     /// opts.read_timeout = Duration::from_secs(2);
     /// opts.write_timeout = Duration::from_secs(2);
@@ -130,7 +149,7 @@ impl<T: Transport> Client<T> {
     /// use std::time::Duration;
     ///
     /// let addr = Ipv4Addr::new(127, 0, 0, 1);
-    /// let mut opts = tcp::Options::new(IpAddr::from(addr), 5, 5);
+    /// let mut opts = tcp::Options::new(IpAddr::from(addr), 5, 5, transport::Connection::PG);
     ///
     /// opts.read_timeout = Duration::from_secs(2);
     /// opts.write_timeout = Duration::from_secs(2);
@@ -155,7 +174,7 @@ impl<T: Transport> Client<T> {
     /// use std::time::Duration;
     ///
     /// let addr = Ipv4Addr::new(127, 0, 0, 1);
-    /// let mut opts = tcp::Options::new(IpAddr::from(addr), 5, 5);
+    /// let mut opts = tcp::Options::new(IpAddr::from(addr), 5, 5, transport::Connection::PG);
     ///
     /// opts.read_timeout = Duration::from_secs(2);
     /// opts.write_timeout = Duration::from_secs(2);
@@ -180,7 +199,7 @@ impl<T: Transport> Client<T> {
     /// use std::time::Duration;
     ///
     /// let addr = Ipv4Addr::new(127, 0, 0, 1);
-    /// let mut opts = tcp::Options::new(IpAddr::from(addr), 5, 5);
+    /// let mut opts = tcp::Options::new(IpAddr::from(addr), 5, 5, transport::Connection::PG);
     ///
     /// opts.read_timeout = Duration::from_secs(2);
     /// opts.write_timeout = Duration::from_secs(2);
@@ -212,7 +231,7 @@ impl<T: Transport> Client<T> {
     /// use std::time::Duration;
     ///
     /// let addr = Ipv4Addr::new(127, 0, 0, 1);
-    /// let mut opts = tcp::Options::new(IpAddr::from(addr), 5, 5);
+    /// let mut opts = tcp::Options::new(IpAddr::from(addr), 5, 5, transport::Connection::PG);
     ///
     /// opts.read_timeout = Duration::from_secs(2);
     /// opts.write_timeout = Duration::from_secs(2);
@@ -244,7 +263,7 @@ impl<T: Transport> Client<T> {
     /// use std::time::Duration;
     ///
     /// let addr = Ipv4Addr::new(127, 0, 0, 1);
-    /// let mut opts = tcp::Options::new(IpAddr::from(addr), 5, 5);
+    /// let mut opts = tcp::Options::new(IpAddr::from(addr), 5, 5, transport::Connection::PG);
     ///
     /// opts.read_timeout = Duration::from_secs(2);
     /// opts.write_timeout = Duration::from_secs(2);
@@ -276,7 +295,7 @@ impl<T: Transport> Client<T> {
     /// use std::time::Duration;
     ///
     /// let addr = Ipv4Addr::new(127, 0, 0, 1);
-    /// let mut opts = tcp::Options::new(IpAddr::from(addr), 5, 5);
+    /// let mut opts = tcp::Options::new(IpAddr::from(addr), 5, 5, transport::Connection::PG);
     ///
     /// opts.read_timeout = Duration::from_secs(2);
     /// opts.write_timeout = Duration::from_secs(2);
@@ -596,6 +615,182 @@ impl<T: Transport> Client<T> {
             error::CLI_ALREADY_STOP,
         )
     }
+
+    /// get plc status
+    pub fn plc_status(&mut self) -> Result<CpuStatus, Error> {
+        let response = self
+            .transport
+            .send(transport::PLC_STATUS_TELEGRAM.as_ref())?;
+
+        if response.len() < transport::PLC_STATUS_MIN_RESPONSE {
+            return Err(Error::Response {
+                code: error::ISO_INVALID_PDU,
+            });
+        }
+
+        let result = BigEndian::read_u16(response[27..29].as_ref());
+
+        if result != 0 {
+            return Err(Error::CPU {
+                code: result as i32,
+            });
+        }
+
+        CpuStatus::from_u8(response[44])
+    }
+
+    pub fn cp_info(&mut self) -> Result<CPInfo, Error> {
+        let szl = self.read_szl(0x0131, 0x000)?;
+
+        Ok(CPInfo {
+            max_pdu_length: BigEndian::read_u16(szl.data[2..].as_ref()),
+            max_connections: BigEndian::read_u16(szl.data[4..].as_ref()),
+            max_mpi_rate: BigEndian::read_u16(szl.data[6..].as_ref()),
+            max_bus_rate: BigEndian::read_u16(szl.data[10..].as_ref()),
+        })
+    }
+
+    /// get cpu info
+    pub fn cpu_info(&mut self) -> Result<CpuInfo, Error> {
+        let szl = self.read_szl(0x001C, 0x000)?;
+
+        if szl.data.len() < transport::SZL_MIN_RESPONSE {
+            return Err(Error::Response {
+                code: error::ISO_INVALID_PDU,
+            });
+        }
+
+        let module_type_name = match str::from_utf8(szl.data[172..204].as_ref()) {
+            Ok(s) => s,
+            Err(e) => {
+                return Err(Error::InvalidResponse {
+                    bytes: szl.data[172..204].to_vec(),
+                    reason: e.to_string(),
+                })
+            }
+        };
+
+        let serial_number = match str::from_utf8(szl.data[138..162].as_ref()) {
+            Ok(s) => s,
+            Err(e) => {
+                return Err(Error::InvalidResponse {
+                    bytes: szl.data[138..162].to_vec(),
+                    reason: e.to_string(),
+                })
+            }
+        };
+
+        let as_name = match str::from_utf8(szl.data[2..26].as_ref()) {
+            Ok(s) => s,
+            Err(e) => {
+                return Err(Error::InvalidResponse {
+                    bytes: szl.data[2..26].to_vec(),
+                    reason: e.to_string(),
+                })
+            }
+        };
+
+        let copyright = match str::from_utf8(szl.data[104..130].as_ref()) {
+            Ok(s) => s,
+            Err(e) => {
+                return Err(Error::InvalidResponse {
+                    bytes: szl.data[104..130].to_vec(),
+                    reason: e.to_string(),
+                })
+            }
+        };
+
+        let module_name = match str::from_utf8(szl.data[36..60].as_ref()) {
+            Ok(s) => s,
+            Err(e) => {
+                return Err(Error::InvalidResponse {
+                    bytes: szl.data[36..60].to_vec(),
+                    reason: e.to_string(),
+                })
+            }
+        };
+
+        Ok(CpuInfo {
+            module_type_name: module_type_name.to_string(),
+            serial_number: serial_number.to_string(),
+            as_name: as_name.to_string(),
+            copyright: copyright.to_string(),
+            module_name: module_name.to_string(),
+        })
+    }
+
+    fn read_szl(&mut self, id: u16, index: u16) -> Result<transport::S7SZL, Error> {
+        let data_szl = 0;
+        let mut offset = 0;
+        let seq_out: u16 = 0x0000;
+
+        let mut s7_szlfirst = transport::SZL_FIRST_TELEGRAM.to_vec();
+
+        BigEndian::write_u16(s7_szlfirst[11..].as_mut(), seq_out + 1);
+        BigEndian::write_u16(s7_szlfirst[29..].as_mut(), id);
+        BigEndian::write_u16(s7_szlfirst[31..].as_mut(), index);
+
+        let mut res = self.transport.send(s7_szlfirst.as_ref())?;
+
+        let validate = |res: &[u8], size: usize| -> Result<(), Error> {
+            if res.len() < transport::MIN_SZL_FIRST_TELEGRAM + size {
+                return Err(Error::Response {
+                    code: error::ISO_INVALID_PDU,
+                });
+            }
+
+            if BigEndian::read_u16(res[27..].as_ref()) != 0 && res[29] != 0xFF {
+                return Err(Error::CPU {
+                    code: error::CLI_INVALID_PLC_ANSWER,
+                });
+            }
+            Ok(())
+        };
+
+        validate(res.as_ref(), 0)?;
+
+        // Skips extra params (ID, Index ...)
+        let mut data_szl = BigEndian::read_u16(res[31..].as_ref()) - 8;
+
+        validate(res.as_ref(), data_szl as usize)?;
+
+        let mut done = res[26] == 0x00;
+        // Slice sequence
+        let mut seq_in: u8 = res[24];
+        let header = transport::SZLHeader {
+            length_header: BigEndian::read_u16(res[37..].as_ref()) * 2,
+            number_of_data_record: BigEndian::read_u16(res[39..].as_ref()),
+        };
+
+        let len = (offset + data_szl) as usize;
+        let mut data = vec![0u8; len];
+
+        data[offset as usize..len].copy_from_slice(res[41..41 + data_szl as usize].as_ref());
+
+        let mut szl = transport::S7SZL { header, data };
+        offset += data_szl;
+
+        let mut s7szlnext: Vec<u8> = transport::SZL_NEXT_TELEGRAM.to_vec();
+
+        while !done {
+            BigEndian::write_u16(s7_szlfirst[11..].as_mut(), seq_out + 1);
+            s7szlnext[24] = seq_in;
+
+            res = self.transport.send(s7szlnext.as_ref())?;
+
+            validate(res.as_ref(), 0)?;
+
+            data_szl = BigEndian::read_u16(res[31..].as_ref());
+            done = res[26] == 0x00;
+            seq_in = res[24];
+
+            szl.data = vec![0u8; len];
+            offset += data_szl;
+            szl.header.length_header += szl.header.length_header;
+        }
+        Ok(szl)
+    }
+
     fn cold_warm_start_stop(
         &mut self,
         req: &[u8],
