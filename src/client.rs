@@ -384,10 +384,11 @@ impl<T: Transport> Client<T> {
             request[26] = db_bytes[1];
 
             // Set Area
-            match area {
-                Area::DataBausteine => request[27] = area as u8,
-                _ => {}
-            }
+            request[27] = area as u8;
+            // match area {
+            //     Area::DataBausteine => request[27] = area as u8,
+            //     _ => {}
+            // }
 
             // Adjusts Start and word length
             let mut address = match word_len {
