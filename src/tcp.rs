@@ -11,7 +11,7 @@ use super::transport::{self, Transport as PackTrait};
 use crate::transport::Connection;
 use byteorder::{BigEndian, ByteOrder};
 use std::io::{Read, Write};
-use std::net::IpAddr;
+use std::net::{IpAddr, SocketAddrV4};
 use std::net::TcpStream;
 use std::sync::Mutex;
 use std::time::Duration;
@@ -35,6 +35,7 @@ pub struct Transport {
 /// a set of options for the TCP connection
 #[derive(Debug, Clone)]
 pub struct Options {
+    pub connection_timeout: Option<Duration>,
     pub read_timeout: Duration,
     pub write_timeout: Duration,
     address: String,
@@ -56,6 +57,7 @@ pub struct Options {
 impl Options {
     pub fn new(address: IpAddr, rack: u16, slot: u16, conn_type: Connection) -> Options {
         Options {
+            connection_timeout: None,
             read_timeout: Duration::new(0, 0),
             write_timeout: Duration::new(0, 0),
             address: format!("{}:{}", address.to_string(), ISO_TCP.to_string()), //ip:102,
@@ -76,7 +78,19 @@ impl Options {
 
 impl Transport {
     pub fn connect(options: Options) -> Result<Transport, Error> {
-        let tcp_client = TcpStream::connect(&options.address)?;
+        let tcp_client = match options.connection_timeout {
+            Some(timeout) => {
+                // Trying connecting with timeout
+                match options.address.parse::<std::net::SocketAddr>() {
+                    Ok(socket_address) => TcpStream::connect_timeout(&socket_address, timeout)?,
+                    Err(e) => return Err(Error::Connect(e.to_string())),
+                }
+            },
+            None => {
+                // Trying connecting with no timeout defined
+                TcpStream::connect(&options.address)?
+            },
+        };
 
         tcp_client.set_read_timeout(Some(options.read_timeout))?;
         tcp_client.set_write_timeout(Some(options.write_timeout))?;
