@@ -117,17 +117,17 @@ pub struct Double {
     /// offset example 8.1
     /// left side is index within the block
     /// right side is the bit position only used for bool, zero for all other types
-    offset: f32,
+    offset: f64,
     value: f64,
 }
 
 impl Double {
-    pub fn new(data_block: i32, offset: f32, mut bytes: Vec<u8>) -> Result<Double, Error> {
+    pub fn new(data_block: i32, offset: f64, mut bytes: Vec<u8>) -> Result<Double, Error> {
         let len = bytes.len();
-        if bytes.len() != Float::size() as usize {
+        if bytes.len() != Double::size() as usize {
             return Err(Error::TryFrom(
                 bytes,
-                format!("Float.new: expected buf size {} got {}", Float::size(), len),
+                format!("Double.new: expected buf size {} got {}", Double::size(), len),
             ));
         }
 
@@ -136,7 +136,7 @@ impl Double {
             return Err(Error::TryFrom(
                 bytes,
                 format!(
-                    "Float.new: float should not have a bit offset got {}",
+                    "Double.new: double should not have a bit offset got {}",
                     bit_offset
                 ),
             ));
