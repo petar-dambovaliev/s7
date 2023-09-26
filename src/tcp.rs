@@ -23,7 +23,7 @@ pub const IDLE_TIMEOUT: Duration = Duration::from_secs(60);
 pub const MAX_LENGTH: usize = 2084;
 //messages
 const PDU_SIZE_REQUESTED: i32 = 480;
-const ISO_TCP: i32 = 102; //default isotcp port
+pub const ISO_TCP: i32 = 102; //default isotcp port
 const ISO_HEADER_SIZE: i32 = 7; // TPKT+COTP Header Size
 const MIN_PDU_SIZE: i32 = 16;
 
@@ -55,12 +55,17 @@ pub struct Options {
 }
 
 impl Options {
-    pub fn new(address: IpAddr, rack: u16, slot: u16, conn_type: Connection) -> Options {
+    pub fn new(address: IpAddr, port: i32, rack: u16, slot: u16, conn_type: Connection) -> Options {
+        let port = match port {
+            0 => ISO_TCP,
+            _ => port
+        };
+
         Options {
             connection_timeout: None,
             read_timeout: Duration::new(0, 0),
             write_timeout: Duration::new(0, 0),
-            address: format!("{}:{}", address.to_string(), ISO_TCP.to_string()), //ip:102,
+            address: format!("{}:{}", address.to_string(), port.to_string()), //ip:102,
             conn_type,
             rack,
             slot,
