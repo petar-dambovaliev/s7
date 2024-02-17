@@ -127,7 +127,11 @@ impl Double {
         if bytes.len() != Double::size() as usize {
             return Err(Error::TryFrom(
                 bytes,
-                format!("Double.new: expected buf size {} got {}", Double::size(), len),
+                format!(
+                    "Double.new: expected buf size {} got {}",
+                    Double::size(),
+                    len
+                ),
             ));
         }
 
@@ -177,7 +181,6 @@ impl Field for Double {
         return buf;
     }
 }
-
 
 /// Bool represents a single bit in a byte from `Area::DataBausteine`
 #[derive(Debug)]
@@ -329,104 +332,108 @@ impl Field for Word {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-#[test]
-fn test_fields() {
-    let float = Float::new(888, 8.0, vec![66, 86, 0, 0]).unwrap();
-    let boolean = Bool::new(888, 8.0, vec![1u8]).unwrap();
-    assert!(boolean.value());
-    assert_eq!(53.5, float.value());
-    let fields: Fields = vec![Box::new(float), Box::new(boolean)];
+    #[test]
+    fn test_fields() {
+        let float = Float::new(888, 8.0, vec![66, 86, 0, 0]).unwrap();
+        let boolean = Bool::new(888, 8.0, vec![1u8]).unwrap();
+        assert!(boolean.value());
+        assert_eq!(53.5, float.value());
+        let fields: Fields = vec![Box::new(float), Box::new(boolean)];
 
-    for field in fields.iter() {
-        println!(
-            "saving bytes {:?} to block {} offset {}",
-            field.to_bytes(),
-            field.data_block(),
-            field.offset()
-        )
-    }
-}
-
-#[test]
-fn test_float() {
-    let val: f32 = 53.5;
-    let mut b = vec![0u8; Float::size() as usize];
-    BigEndian::write_f32(b.as_mut_slice(), val);
-    let mut field = Float::new(888, 8.0, b).unwrap();
-    field.set_value(val);
-    let result = field.to_bytes();
-
-    assert_eq!(vec![66, 86, 0, 0], result);
-
-    // test invalid bit offset
-    // float should not have a bit offset
-    match Float::new(888, 8.1, vec![66, 86, 0, 0]) {
-        Ok(_) => {
-            println!("should return an error at invalid bit offset 1. Floats should not have a bit offset");
-            assert!(false)
+        for field in fields.iter() {
+            println!(
+                "saving bytes {:?} to block {} offset {}",
+                field.to_bytes(),
+                field.data_block(),
+                field.offset()
+            )
         }
-        Err(_) => {}
     }
-}
 
-#[test]
-fn test_bool() {
-    let b = vec![1u8; 1];
-    let mut field = Bool::new(888, 8.1, b).unwrap();
-    field.set_value(true);
+    #[test]
+    fn test_float() {
+        let val: f32 = 53.5;
+        let mut b = vec![0u8; Float::size() as usize];
+        BigEndian::write_f32(b.as_mut_slice(), val);
+        let mut field = Float::new(888, 8.0, b).unwrap();
+        field.set_value(val);
+        let result = field.to_bytes();
 
-    let mut res: Vec<u8> = field.to_bytes();
+        assert_eq!(vec![66, 86, 0, 0], result);
 
-    assert_eq!(res.len(), 1);
-    assert_eq!(res[0], 3);
-    assert_eq!(field.value(), true);
-
-    field.set_value(false);
-    res = field.to_bytes();
-
-    assert_eq!(res.len(), 1);
-    assert_eq!(res[0], 1);
-    assert_eq!(field.value(), false);
-
-    let bb = vec![0b00001000u8; 1];
-    field = Bool::new(888, 8.4, bb).unwrap();
-    field.set_value(true);
-
-    res = field.to_bytes();
-
-    assert_eq!(res.len(), 1);
-    assert_eq!(res[0], 24);
-    assert_eq!(field.value(), true);
-
-    // test invalid bit offset
-    match Bool::new(888, 8.8, vec![0b00001000u8; 1]) {
-        Ok(_) => {
-            println!("should return an error at invalid bit offset 8");
-            assert!(false)
+        // test invalid bit offset
+        // float should not have a bit offset
+        match Float::new(888, 8.1, vec![66, 86, 0, 0]) {
+            Ok(_) => {
+                println!("should return an error at invalid bit offset 1. Floats should not have a bit offset");
+                assert!(false)
+            }
+            Err(_) => {}
         }
-        Err(_) => {}
     }
-}
 
-#[test]
-fn test_word() {
-    let val: u16 = 43981;
-    let mut b = vec![0u8; Word::size() as usize];
-    BigEndian::write_u16(b.as_mut_slice(), val);
-    let mut field = Word::new(888, 8.0, b).unwrap();
-    field.set_value(val);
-    let result = field.to_bytes();
+    #[test]
+    fn test_bool() {
+        let b = vec![1u8; 1];
+        let mut field = Bool::new(888, 8.1, b).unwrap();
+        field.set_value(true);
 
-    assert_eq!(vec![171, 205], result);
+        let mut res: Vec<u8> = field.to_bytes();
 
-    // test invalid bit offset
-    // words should not have a bit offset
-    match Word::new(888, 8.1, vec![12, 23]) {
-        Ok(_) => {
-            println!("should return an error at invalid bit offset 1. Words should not have a bit offset");
-            assert!(false)
+        assert_eq!(res.len(), 1);
+        assert_eq!(res[0], 3);
+        assert_eq!(field.value(), true);
+
+        field.set_value(false);
+        res = field.to_bytes();
+
+        assert_eq!(res.len(), 1);
+        assert_eq!(res[0], 1);
+        assert_eq!(field.value(), false);
+
+        let bb = vec![0b00001000u8; 1];
+        field = Bool::new(888, 8.4, bb).unwrap();
+        field.set_value(true);
+
+        res = field.to_bytes();
+
+        assert_eq!(res.len(), 1);
+        assert_eq!(res[0], 24);
+        assert_eq!(field.value(), true);
+
+        // test invalid bit offset
+        match Bool::new(888, 8.8, vec![0b00001000u8; 1]) {
+            Ok(_) => {
+                println!("should return an error at invalid bit offset 8");
+                assert!(false)
+            }
+            Err(_) => {}
         }
-        Err(_) => {}
+    }
+
+    #[test]
+    fn test_word() {
+        let val: u16 = 43981;
+        let mut b = vec![0u8; Word::size() as usize];
+        BigEndian::write_u16(b.as_mut_slice(), val);
+        let mut field = Word::new(888, 8.0, b).unwrap();
+        field.set_value(val);
+        let result = field.to_bytes();
+
+        assert_eq!(vec![171, 205], result);
+
+        // test invalid bit offset
+        // words should not have a bit offset
+        match Word::new(888, 8.1, vec![12, 23]) {
+            Ok(_) => {
+                println!("should return an error at invalid bit offset 1. Words should not have a bit offset");
+                assert!(false)
+            }
+            Err(_) => {}
+        }
     }
 }
