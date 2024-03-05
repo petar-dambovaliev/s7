@@ -6,6 +6,7 @@ use super::constant::{self, Area};
 use super::error::{self, Error};
 use super::transport::{self, Transport};
 use crate::constant::CpuStatus;
+use crate::tcp::ISO_TCP;
 use byteorder::{BigEndian, ByteOrder};
 use std::str;
 
@@ -46,7 +47,7 @@ impl<T: Transport> Client<T> {
     /// use s7::field::{Bool, Field};
     ///
     /// let addr = Ipv4Addr::new(127, 0, 0, 1);
-    /// let mut opts = tcp::Options::new(IpAddr::from(addr), 5, 5, transport::Connection::PG);
+    /// let mut opts = tcp::Options::new(IpAddr::from(addr), tcp::ISO_TCP, 5, 5, transport::Connection::PG);
     ///
     /// opts.read_timeout = Duration::from_secs(2);
     /// opts.write_timeout = Duration::from_secs(2);
@@ -98,7 +99,7 @@ impl<T: Transport> Client<T> {
     /// use s7::field::{Bool, Field};
     ///
     /// let addr = Ipv4Addr::new(127, 0, 0, 1);
-    /// let mut opts = tcp::Options::new(IpAddr::from(addr), 5, 5, transport::Connection::PG);
+    /// let mut opts = tcp::Options::new(IpAddr::from(addr), tcp::ISO_TCP, 5, 5, transport::Connection::PG);
     ///
     /// opts.read_timeout = Duration::from_secs(2);
     /// opts.write_timeout = Duration::from_secs(2);
@@ -149,7 +150,7 @@ impl<T: Transport> Client<T> {
     /// use std::time::Duration;
     ///
     /// let addr = Ipv4Addr::new(127, 0, 0, 1);
-    /// let mut opts = tcp::Options::new(IpAddr::from(addr), 5, 5, transport::Connection::PG);
+    /// let mut opts = tcp::Options::new(IpAddr::from(addr), tcp::ISO_TCP, 5, 5, transport::Connection::PG);
     ///
     /// opts.read_timeout = Duration::from_secs(2);
     /// opts.write_timeout = Duration::from_secs(2);
@@ -174,7 +175,7 @@ impl<T: Transport> Client<T> {
     /// use std::time::Duration;
     ///
     /// let addr = Ipv4Addr::new(127, 0, 0, 1);
-    /// let mut opts = tcp::Options::new(IpAddr::from(addr), 5, 5, transport::Connection::PG);
+    /// let mut opts = tcp::Options::new(IpAddr::from(addr), tcp::ISO_TCP, 5, 5, transport::Connection::PG);
     ///
     /// opts.read_timeout = Duration::from_secs(2);
     /// opts.write_timeout = Duration::from_secs(2);
@@ -199,7 +200,7 @@ impl<T: Transport> Client<T> {
     /// use std::time::Duration;
     ///
     /// let addr = Ipv4Addr::new(127, 0, 0, 1);
-    /// let mut opts = tcp::Options::new(IpAddr::from(addr), 5, 5, transport::Connection::PG);
+    /// let mut opts = tcp::Options::new(IpAddr::from(addr), tcp::ISO_TCP, 5, 5, transport::Connection::PG);
     ///
     /// opts.read_timeout = Duration::from_secs(2);
     /// opts.write_timeout = Duration::from_secs(2);
@@ -231,7 +232,7 @@ impl<T: Transport> Client<T> {
     /// use std::time::Duration;
     ///
     /// let addr = Ipv4Addr::new(127, 0, 0, 1);
-    /// let mut opts = tcp::Options::new(IpAddr::from(addr), 5, 5, transport::Connection::PG);
+    /// let mut opts = tcp::Options::new(IpAddr::from(addr), tcp::ISO_TCP, 5, 5, transport::Connection::PG);
     ///
     /// opts.read_timeout = Duration::from_secs(2);
     /// opts.write_timeout = Duration::from_secs(2);
@@ -263,7 +264,7 @@ impl<T: Transport> Client<T> {
     /// use std::time::Duration;
     ///
     /// let addr = Ipv4Addr::new(127, 0, 0, 1);
-    /// let mut opts = tcp::Options::new(IpAddr::from(addr), 5, 5, transport::Connection::PG);
+    /// let mut opts = tcp::Options::new(IpAddr::from(addr), tcp::ISO_TCP, 5, 5, transport::Connection::PG);
     ///
     /// opts.read_timeout = Duration::from_secs(2);
     /// opts.write_timeout = Duration::from_secs(2);
@@ -295,7 +296,7 @@ impl<T: Transport> Client<T> {
     /// use std::time::Duration;
     ///
     /// let addr = Ipv4Addr::new(127, 0, 0, 1);
-    /// let mut opts = tcp::Options::new(IpAddr::from(addr), 5, 5, transport::Connection::PG);
+    /// let mut opts = tcp::Options::new(IpAddr::from(addr), tcp::ISO_TCP, 5, 5, transport::Connection::PG);
     ///
     /// opts.read_timeout = Duration::from_secs(2);
     /// opts.write_timeout = Duration::from_secs(2);
