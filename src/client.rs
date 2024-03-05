@@ -11,19 +11,19 @@ use std::str;
 
 #[derive(Debug, Clone)]
 pub struct CpuInfo {
-    module_type_name: String,
-    serial_number: String,
-    as_name: String,
-    copyright: String,
-    module_name: String,
+    pub module_type_name: String,
+    pub serial_number: String,
+    pub as_name: String,
+    pub copyright: String,
+    pub module_name: String,
 }
 
 #[derive(Debug, Clone)]
 pub struct CPInfo {
-    max_pdu_length: u16,
-    max_connections: u16,
-    max_mpi_rate: u16,
-    max_bus_rate: u16,
+    pub max_pdu_length: u16,
+    pub max_connections: u16,
+    pub max_mpi_rate: u16,
+    pub max_bus_rate: u16,
 }
 
 #[derive(Debug, Clone)]
