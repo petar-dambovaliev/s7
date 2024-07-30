@@ -18,6 +18,7 @@ pub struct CpuInfo {
     pub module_name: String,
 }
 
+/// Communication Processor informations
 #[derive(Debug, Clone)]
 pub struct CPInfo {
     pub max_pdu_length: u16,
