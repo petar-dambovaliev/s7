@@ -107,7 +107,7 @@ impl Field for Float {
     fn to_bytes(&self) -> Vec<u8> {
         let mut buf = vec![0u8; Float::size() as usize];
         BigEndian::write_f32(buf.as_mut_slice(), self.value);
-        return buf;
+        buf
     }
 }
 
@@ -178,7 +178,7 @@ impl Field for Double {
     fn to_bytes(&self) -> Vec<u8> {
         let mut buf = vec![0u8; Double::size() as usize];
         BigEndian::write_f64(buf.as_mut_slice(), self.value);
-        return buf;
+        buf
     }
 }
 
@@ -228,7 +228,7 @@ impl Bool {
         if val {
             return b | (1 << bit_pos);
         }
-        return b & !(1 << bit_pos);
+        b & !(1 << bit_pos)
     }
 
     pub fn size() -> i32 {
@@ -328,7 +328,7 @@ impl Field for Word {
     fn to_bytes(&self) -> Vec<u8> {
         let mut buf = vec![0u8; Word::size() as usize];
         BigEndian::write_u16(buf.as_mut_slice(), self.value);
-        return buf;
+        buf
     }
 }
 
@@ -367,13 +367,9 @@ mod tests {
 
         // test invalid bit offset
         // float should not have a bit offset
-        match Float::new(888, 8.1, vec![66, 86, 0, 0]) {
-            Ok(_) => {
-                println!("should return an error at invalid bit offset 1. Floats should not have a bit offset");
-                assert!(false)
-            }
-            Err(_) => {}
-        }
+        Float::new(888, 8.1, vec![66, 86, 0, 0]).expect_err(
+            "should return an error at invalid bit offset 1. Floats should not have a bit offset",
+        );
     }
 
     #[test]
@@ -386,14 +382,14 @@ mod tests {
 
         assert_eq!(res.len(), 1);
         assert_eq!(res[0], 3);
-        assert_eq!(field.value(), true);
+        assert!(field.value());
 
         field.set_value(false);
         res = field.to_bytes();
 
         assert_eq!(res.len(), 1);
         assert_eq!(res[0], 1);
-        assert_eq!(field.value(), false);
+        assert!(!field.value());
 
         let bb = vec![0b00001000u8; 1];
         field = Bool::new(888, 8.4, bb).unwrap();
@@ -403,16 +399,11 @@ mod tests {
 
         assert_eq!(res.len(), 1);
         assert_eq!(res[0], 24);
-        assert_eq!(field.value(), true);
+        assert!(field.value());
 
         // test invalid bit offset
-        match Bool::new(888, 8.8, vec![0b00001000u8; 1]) {
-            Ok(_) => {
-                println!("should return an error at invalid bit offset 8");
-                assert!(false)
-            }
-            Err(_) => {}
-        }
+        Bool::new(888, 8.8, vec![0b00001000u8; 1])
+            .expect_err("should return an error at invalid bit offset 8");
     }
 
     #[test]
@@ -428,12 +419,8 @@ mod tests {
 
         // test invalid bit offset
         // words should not have a bit offset
-        match Word::new(888, 8.1, vec![12, 23]) {
-            Ok(_) => {
-                println!("should return an error at invalid bit offset 1. Words should not have a bit offset");
-                assert!(false)
-            }
-            Err(_) => {}
-        }
+        Word::new(888, 8.1, vec![12, 23]).expect_err(
+            "should return an error at invalid bit offset 1. Words should not have a bit offset",
+        );
     }
 }

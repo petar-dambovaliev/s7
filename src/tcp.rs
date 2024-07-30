@@ -11,7 +11,7 @@ use super::transport::{self, Transport as PackTrait};
 use crate::transport::Connection;
 use byteorder::{BigEndian, ByteOrder};
 use std::io::{Read, Write};
-use std::net::{IpAddr, SocketAddrV4};
+use std::net::IpAddr;
 use std::net::TcpStream;
 use std::sync::Mutex;
 use std::time::Duration;
@@ -65,7 +65,7 @@ impl Options {
             connection_timeout: None,
             read_timeout: Duration::new(0, 0),
             write_timeout: Duration::new(0, 0),
-            address: format!("{}:{}", address.to_string(), port.to_string()), //ip:102,
+            address: format!("{}:{}", address, port), //ip:102,
             conn_type,
             rack,
             slot,
@@ -106,11 +106,10 @@ impl Transport {
     }
 
     fn set_tsap(&mut self) {
-        let mut remote_tsap = ((self.connection_type() as u16) << 8) as u16
+        let remote_tsap = ((self.connection_type() as u16) << 8)
             + (self.options.rack * 0x20)
             + self.options.slot;
-        let local_tsap: u16 = 0x0100 & 0x0000FFFF;
-        remote_tsap = remote_tsap & 0x0000FFFF;
+        let local_tsap: u16 = 0x0100;
 
         self.options.local_tsap = local_tsap;
         self.options.local_tsap_high = (local_tsap >> 8) as u8;
@@ -118,7 +117,7 @@ impl Transport {
 
         self.options.remote_tsap = remote_tsap;
         self.options.remote_tsap_high = (remote_tsap >> 8) as u8;
-        self.options.remote_tsap_low = (remote_tsap as u8) & 0x00FF;
+        self.options.remote_tsap_low = remote_tsap as u8;
     }
 
     fn iso_connect(&mut self) -> Result<(), Error> {
@@ -179,23 +178,23 @@ impl PackTrait for Transport {
             Ok(s) => s,
             Err(_) => return Err(Error::Lock),
         };
-        stream.write(request)?;
+        stream.write_all(request)?;
 
         let mut data = vec![0u8; MAX_LENGTH];
         let mut length;
 
         loop {
             // Get TPKT (4 bytes)
-            stream.read(&mut data[..4])?;
+            stream.read_exact(&mut data[..4])?;
 
             // Read length, ignore transaction & protocol id (4 bytes)
             length = BigEndian::read_u16(&data[2..]);
             let length_n = length as i32;
 
             if length_n == ISO_HEADER_SIZE {
-                stream.read(&mut data[4..7])?;
+                stream.read_exact(&mut data[4..7])?;
             } else {
-                if length_n > PDU_SIZE_REQUESTED + ISO_HEADER_SIZE || length_n < MIN_PDU_SIZE {
+                if !(MIN_PDU_SIZE..=PDU_SIZE_REQUESTED + ISO_HEADER_SIZE).contains(&length_n) {
                     return Err(Error::PduLength(length_n));
                 }
                 break;
@@ -203,11 +202,11 @@ impl PackTrait for Transport {
         }
 
         // Skip remaining 3 COTP bytes
-        stream.read(&mut data[4..7])?;
+        stream.read_exact(&mut data[4..7])?;
         self.options.last_pdu_type = data[5]; // Stores PDU Type, we need it for later
 
         // Receives the S7 Payload
-        stream.read(&mut data[7..length as usize])?;
+        stream.read_exact(&mut data[7..length as usize])?;
         Ok(data[0..length as usize].to_vec())
     }
 

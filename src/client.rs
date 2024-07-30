@@ -6,7 +6,6 @@ use super::constant::{self, Area};
 use super::error::{self, Error};
 use super::transport::{self, Transport};
 use crate::constant::CpuStatus;
-use crate::tcp::ISO_TCP;
 use byteorder::{BigEndian, ByteOrder};
 use std::str;
 
@@ -78,16 +77,16 @@ impl<T: Transport> Client<T> {
         db_number: i32,
         start: i32,
         size: i32,
-        buffer: &mut Vec<u8>,
+        buffer: &mut [u8],
     ) -> Result<(), Error> {
-        return self.read(
+        self.read(
             Area::DataBausteine,
             db_number,
             start,
             size,
             constant::WL_BYTE,
             buffer,
-        );
+        )
     }
 
     /// # Examples
@@ -130,16 +129,16 @@ impl<T: Transport> Client<T> {
         db_number: i32,
         start: i32,
         size: i32,
-        buffer: &mut Vec<u8>,
+        buffer: &mut [u8],
     ) -> Result<(), Error> {
-        return self.write(
+        self.write(
             Area::DataBausteine,
             db_number,
             start,
             size,
             constant::WL_BYTE,
             buffer,
-        );
+        )
     }
 
     /// # Examples
@@ -163,8 +162,8 @@ impl<T: Transport> Client<T> {
     ///
     /// cl.mb_read(1, 3, buffer).unwrap();
     /// ```
-    pub fn mb_read(&mut self, start: i32, size: i32, buffer: &mut Vec<u8>) -> Result<(), Error> {
-        return self.read(Area::Merker, 0, start, size, constant::WL_BYTE, buffer);
+    pub fn mb_read(&mut self, start: i32, size: i32, buffer: &mut [u8]) -> Result<(), Error> {
+        self.read(Area::Merker, 0, start, size, constant::WL_BYTE, buffer)
     }
 
     /// # Examples
@@ -188,8 +187,8 @@ impl<T: Transport> Client<T> {
     ///
     /// cl.mb_write(1, 3, buffer).unwrap();
     /// ```
-    pub fn mb_write(&mut self, start: i32, size: i32, buffer: &mut Vec<u8>) -> Result<(), Error> {
-        return self.write(Area::Merker, 0, start, size, constant::WL_BYTE, buffer);
+    pub fn mb_write(&mut self, start: i32, size: i32, buffer: &mut [u8]) -> Result<(), Error> {
+        self.write(Area::Merker, 0, start, size, constant::WL_BYTE, buffer)
     }
 
     /// # Examples
@@ -213,15 +212,15 @@ impl<T: Transport> Client<T> {
     ///
     /// cl.eb_read(1, 3, buffer).unwrap();
     /// ```
-    pub fn eb_read(&mut self, start: i32, size: i32, buffer: &mut Vec<u8>) -> Result<(), Error> {
-        return self.read(
+    pub fn eb_read(&mut self, start: i32, size: i32, buffer: &mut [u8]) -> Result<(), Error> {
+        self.read(
             Area::ProcessInput,
             0,
             start,
             size,
             constant::WL_BYTE,
             buffer,
-        );
+        )
     }
 
     /// # Examples
@@ -245,15 +244,15 @@ impl<T: Transport> Client<T> {
     ///
     /// cl.eb_write(1, 3, buffer).unwrap();
     /// ```
-    pub fn eb_write(&mut self, start: i32, size: i32, buffer: &mut Vec<u8>) -> Result<(), Error> {
-        return self.write(
+    pub fn eb_write(&mut self, start: i32, size: i32, buffer: &mut [u8]) -> Result<(), Error> {
+        self.write(
             Area::ProcessInput,
             0,
             start,
             size,
             constant::WL_BYTE,
             buffer,
-        );
+        )
     }
 
     /// # Examples
@@ -277,15 +276,15 @@ impl<T: Transport> Client<T> {
     ///
     /// cl.ab_read(1, 3, buffer).unwrap();
     /// ```
-    pub fn ab_read(&mut self, start: i32, size: i32, buffer: &mut Vec<u8>) -> Result<(), Error> {
-        return self.read(
+    pub fn ab_read(&mut self, start: i32, size: i32, buffer: &mut [u8]) -> Result<(), Error> {
+        self.read(
             Area::ProcessOutput,
             0,
             start,
             size,
             constant::WL_BYTE,
             buffer,
-        );
+        )
     }
 
     /// # Examples
@@ -309,15 +308,15 @@ impl<T: Transport> Client<T> {
     ///
     /// cl.ab_write(1, 3, buffer).unwrap();
     /// ```
-    pub fn ab_write(&mut self, start: i32, size: i32, buffer: &mut Vec<u8>) -> Result<(), Error> {
-        return self.write(
+    pub fn ab_write(&mut self, start: i32, size: i32, buffer: &mut [u8]) -> Result<(), Error> {
+        self.write(
             Area::ProcessOutput,
             0,
             start,
             size,
             constant::WL_BYTE,
             buffer,
-        );
+        )
     }
 
     //read generic area, pass result into a buffer
@@ -328,7 +327,7 @@ impl<T: Transport> Client<T> {
         mut start: i32,
         mut amount: i32,
         mut word_len: i32,
-        buffer: &mut Vec<u8>,
+        buffer: &mut [u8],
     ) -> Result<(), Error> {
         // Some adjustment
         match area {
@@ -348,12 +347,10 @@ impl<T: Transport> Client<T> {
 
         if word_len == constant::WL_BIT {
             amount = 1; // Only 1 bit can be transferred at time
-        } else {
-            if word_len != constant::WL_COUNTER && word_len != constant::WL_TIMER {
-                amount = amount * word_size;
-                word_size = 1;
-                word_len = constant::WL_BYTE;
-            }
+        } else if word_len != constant::WL_COUNTER && word_len != constant::WL_TIMER {
+            amount *= word_size;
+            word_size = 1;
+            word_len = constant::WL_BYTE;
         }
 
         let pdu_length = self.transport.pdu_length();
@@ -407,9 +404,9 @@ impl<T: Transport> Client<T> {
 
             // Address into the PLC (only 3 bytes)
             request[30] = (address & 0x0FF) as u8;
-            address = address >> 8;
+            address >>= 8;
             request[29] = (address & 0x0FF) as u8;
-            address = address >> 8;
+            address >>= 8;
             request[28] = (address & 0x0FF) as u8;
 
             let result = self.transport.send(request.as_slice());
@@ -457,7 +454,7 @@ impl<T: Transport> Client<T> {
         mut start: i32,
         mut amount: i32,
         mut word_len: i32,
-        buffer: &mut Vec<u8>,
+        buffer: &mut [u8],
     ) -> Result<(), Error> {
         // Some adjustment
         word_len = match area {
@@ -477,12 +474,10 @@ impl<T: Transport> Client<T> {
 
         if word_len == constant::WL_BIT {
             amount = 1; // Only 1 bit can be transferred at time
-        } else {
-            if word_len != constant::WL_COUNTER && word_len != constant::WL_TIMER {
-                amount = amount * word_size;
-                word_size = 1;
-                word_len = constant::WL_BYTE;
-            }
+        } else if word_len != constant::WL_COUNTER && word_len != constant::WL_TIMER {
+            amount *= word_size;
+            word_size = 1;
+            word_len = constant::WL_BYTE;
         }
 
         let mut offset: i32 = 0;
@@ -510,11 +505,8 @@ impl<T: Transport> Client<T> {
             // Set DB Number
             request_data[27] = area as u8;
 
-            match area {
-                Area::DataBausteine => {
-                    BigEndian::write_u16(request_data[25..].as_mut(), db_number as u16)
-                }
-                _ => {}
+            if let Area::DataBausteine = area {
+                BigEndian::write_u16(request_data[25..].as_mut(), db_number as u16)
             }
             // Adjusts start and word length
             let mut address = match word_len {
@@ -533,9 +525,9 @@ impl<T: Transport> Client<T> {
             BigEndian::write_u16(request_data[23..].as_mut(), num_elements as u16);
             // address into the PLC
             request_data[30] = (address & 0x0FF) as u8;
-            address = address >> 8;
+            address >>= 8;
             request_data[29] = (address & 0x0FF) as u8;
-            address = address >> 8;
+            address >>= 8;
             request_data[28] = (address & 0x0FF) as u8;
 
             // Transport Size
@@ -722,7 +714,7 @@ impl<T: Transport> Client<T> {
     }
 
     fn read_szl(&mut self, id: u16, index: u16) -> Result<transport::S7SZL, Error> {
-        let data_szl = 0;
+        //data_szl = 0;
         let mut offset = 0;
         let seq_out: u16 = 0x0000;
 

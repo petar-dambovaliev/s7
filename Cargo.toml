@@ -13,3 +13,11 @@ readme = "README.md"
 
 [dependencies]
 byteorder = "1"
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+
+[workspace.lints.clippy]
+# groups https://doc.rust-lang.org/clippy/
+complexity = "deny" # warn
+perf = "deny"       # warn
