@@ -1,5 +1,9 @@
+### Rust Lib ###
 /target
+[Cc]argo.lock
+rustc-ice*.txt
+
+### Editors ###
 **/*.rs.bk
-Cargo.lock
+.vscode/
 .idea/
-tests/

@@ -41,11 +41,11 @@ pub trait Transport {
 }
 
 /// response from the plc that the connection has been confirmed
-pub const CONFIRM_CONNECTION: u8 = 0xD0;
+pub(crate) const CONFIRM_CONNECTION: u8 = 0xD0;
 
 /// ISO Connection Request telegram (contains also ISO Header and COTP Header)
 /// TPKT (RFC1006 Header)
-pub const ISO_CONNECTION_REQUEST_TELEGRAM: [u8; 22] = [
+pub(crate) const ISO_CONNECTION_REQUEST_TELEGRAM: [u8; 22] = [
     3,  // RFC 1006 ID (3)
     0,  // Reserved, always 0
     0,  // High part of packet lenght (entire frame, payload and TPDU included)
@@ -72,7 +72,7 @@ pub const ISO_CONNECTION_REQUEST_TELEGRAM: [u8; 22] = [
 ]; // Dst TSAP LO (will be overwritten)
 
 /// S7 Read/Write Request Header (contains also ISO Header and COTP Header)
-pub const READ_WRITE_TELEGRAM: [u8; 35] = [
+pub(crate) const READ_WRITE_TELEGRAM: [u8; 35] = [
     // 31-35 bytes
     3,
     0,
@@ -113,7 +113,7 @@ pub const READ_WRITE_TELEGRAM: [u8; 35] = [
 ]; // Data Length * 8 (if not bit or timer or counter)
 
 // used during establishing a connection
-pub const PDU_NEGOTIATION_TELEGRAM: [u8; 25] = [
+pub(crate) const PDU_NEGOTIATION_TELEGRAM: [u8; 25] = [
     3, 0, 0, 25, 2, 240, 128, // TPKT + COTP (see above for info)
     50, 1, 0, 0, 4, 0, 0, 8, 0, 0, 240, 0, 0, 1, 0, 1, 0, 30,
 ]; // PDU Length Requested = HI-LO Here Default 480 bytes
@@ -168,6 +168,7 @@ pub(crate) const PDU_STOP: u8 = 0x29; // CPU stop
 pub(crate) const PDU_ALREADY_STARTED: u8 = 0x02; // CPU already in run mode
 pub(crate) const PDU_ALREADY_STOPPED: u8 = 0x07; // CPU already in stop mode
 
+#[allow(dead_code)]
 pub(crate) struct SZLHeader {
     pub length_header: u16,
     pub number_of_data_record: u16,
